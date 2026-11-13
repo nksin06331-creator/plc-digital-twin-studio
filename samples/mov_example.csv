@@ -1,0 +1,8 @@
+step,instruction,operand,comment
+0,LD,X0,転送条件
+1,MOV,K-1 D0,65535 / -1
+2,MOV,D0 D1,ワードコピー
+3,SET,M0,保持ビット
+4,LD,X1,リセット条件
+5,RST,M0,保持解除
+6,END,,

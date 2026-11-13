@@ -1,0 +1,5 @@
+step,instruction,operand,comment
+0,LD,X0,始動入力
+1,AND,X1,許可入力
+2,OUT,Y0,両方ONで出力
+3,END,,
