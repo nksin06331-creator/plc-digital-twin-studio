@@ -3,6 +3,12 @@ test("push buttons drive holding circuit, lamps, motor and ladder", async ({
   page,
 }) => {
   await page.goto("/");
+  await page
+    .getByRole("combobox", { name: "盤モデル", exact: true })
+    .selectOption("generic");
+  await page
+    .getByRole("button", { name: "training_demo", exact: true })
+    .click();
   await expect(page.locator("#ladder .ladder-rung")).toHaveCount(6);
   await page
     .getByRole("button", { name: "▶ 試験運転開始", exact: true })
@@ -48,6 +54,12 @@ test("BCD dial controls numeric output and motor conflict is visible", async ({
 }) => {
   await page.goto("/");
   await page
+    .getByRole("combobox", { name: "盤モデル", exact: true })
+    .selectOption("generic");
+  await page
+    .getByRole("button", { name: "training_demo", exact: true })
+    .click();
+  await page
     .getByRole("button", { name: "▶ 試験運転開始", exact: true })
     .click();
   await page
@@ -79,6 +91,12 @@ test("BCD dial controls numeric output and motor conflict is visible", async ({
 test("NC momentary contacts return ON after key release", async ({ page }) => {
   await page.goto("/");
   await page
+    .getByRole("combobox", { name: "盤モデル", exact: true })
+    .selectOption("generic");
+  await page
+    .getByRole("button", { name: "training_demo", exact: true })
+    .click();
+  await page
     .getByRole("button", { name: "割付設定を表示", exact: true })
     .click();
   await page
@@ -99,6 +117,12 @@ test("NC momentary contacts return ON after key release", async ({ page }) => {
 test("training panel fits narrow viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
+  await page
+    .getByRole("combobox", { name: "盤モデル", exact: true })
+    .selectOption("generic");
+  await page
+    .getByRole("button", { name: "training_demo", exact: true })
+    .click();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
@@ -112,6 +136,12 @@ test("window blur releases a held input and invalid BCD address does not crash",
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
+  await page
+    .getByRole("combobox", { name: "盤モデル", exact: true })
+    .selectOption("generic");
+  await page
+    .getByRole("button", { name: "training_demo", exact: true })
+    .click();
   const start = page.getByRole("button", {
     name: "X0 押しボタン",
     exact: true,

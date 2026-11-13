@@ -9,16 +9,20 @@ import mov from "../../samples/mov_example.csv?raw";
 import { group } from "../core/operands";
 import { LadderView } from "./LadderView";
 import { TrainingPanel } from "./TrainingPanel";
+import { ExamPanel } from "./ExamPanel";
+import { ExamPlant, defaultWiring, type ExamWiring } from "../core/plant/exam";
+import exam from "../../samples/exam_conveyor.csv?raw";
 import training from "../../samples/training_demo.csv?raw";
 const samples: Record<string, string> = {
+  exam_conveyor: exam,
   basic_and: basic,
   training_demo: training,
   self_hold: hold,
   mov_example: mov,
 };
 export function App() {
-  const [program, setProgram] = useState(() => parseText(training)),
-    [filename, setFilename] = useState("training_demo.csv"),
+  const [program, setProgram] = useState(() => parseText(exam)),
+    [filename, setFilename] = useState("exam_conveyor.csv"),
     [encoding, setEncoding] = useState<
       "auto" | "utf-8" | "shift_jis" | "utf-16le" | "utf-16be"
     >("auto"),
@@ -29,7 +33,23 @@ export function App() {
     [extra, setExtra] = useState<string[]>([]),
     [newDevice, setNewDevice] = useState("M0");
   const [lastTrace, setLastTrace] = useState<ScanTrace[]>([]);
+  const [boardMode, setBoardMode] = useState<"exam" | "generic">("exam");
+  const [wiring, setWiring] = useState<ExamWiring>(defaultWiring);
+  const plant = useRef(new ExamPlant());
   const plc = useRef(new PLC());
+  function resetSimulation() {
+    plc.current.reset();
+    plant.current.reset();
+    if (boardMode === "exam")
+      plc.current.inputs = plant.current.inputImage(wiring);
+    setLastTrace([]);
+  }
+  useEffect(() => {
+    if (boardMode === "exam") {
+      plc.current.inputs = plant.current.inputImage(wiring);
+      refresh((n) => n + 1);
+    }
+  }, [boardMode, wiring]);
   const loadVersion = useRef(0);
   const analysis = useMemo(() => analyze(program), [program]),
     errors = useMemo(() => validate(program), [program]);
@@ -38,18 +58,26 @@ export function App() {
     [],
   );
   const scan = useCallback(() => {
+    const previousPosition = plant.current.position,
+      previousInputs = { ...plc.current.inputs };
     try {
+      if (boardMode === "exam") {
+        plant.current.advance(plc.current.memory, wiring, 100);
+        plc.current.inputs = plant.current.inputImage(wiring);
+      }
       const trace = plc.current.scan(program, 100);
       setLastTrace(trace);
       refresh((n) => n + 1);
       log(`スキャン ${plc.current.scans} 完了 · ${trace.length}命令`);
       return true;
     } catch (e) {
+      plant.current.position = previousPosition;
+      plc.current.inputs = previousInputs;
       setRunning(false);
       log((e as Error).message);
       return false;
     }
-  }, [program, log]);
+  }, [program, log, boardMode, wiring]);
   useEffect(() => {
     if (!running) return;
     const id = window.setInterval(scan, 100);
@@ -60,8 +88,7 @@ export function App() {
     setRunning(false);
     setProgram(parseText(text));
     setFilename(name);
-    plc.current.reset();
-    setLastTrace([]);
+    resetSimulation();
     refresh((n) => n + 1);
     setSelected(null);
     setLogs([]);
@@ -80,8 +107,7 @@ export function App() {
       setRunning(false);
       setProgram(p);
       setFilename(f.name);
-      plc.current.reset();
-      setLastTrace([]);
+      resetSimulation();
       refresh((n) => n + 1);
       setLogs([]);
       setSelected(null);
@@ -173,6 +199,24 @@ export function App() {
             <option value="shift_jis">Shift_JIS / CP932</option>
           </select>
         </label>
+        <label className="panel-mode">
+          盤モデル
+          <select
+            aria-label="盤モデル"
+            value={boardMode}
+            onChange={(e) => {
+              setRunning(false);
+              plc.current.reset();
+              plant.current.reset();
+              setLastTrace([]);
+              setBoardMode(e.target.value as "exam" | "generic");
+              refresh((n) => n + 1);
+            }}
+          >
+            <option value="exam">2級試験盤（コンベア）</option>
+            <option value="generic">汎用スイッチ・モーター盤</option>
+          </select>
+        </label>
         <h3>デモ回路</h3>
         {Object.keys(samples).map((s) => (
           <button key={s} onClick={() => load(samples[s], s + ".csv")}>
@@ -233,8 +277,7 @@ export function App() {
           <button
             onClick={() => {
               setRunning(false);
-              plc.current.reset();
-              setLastTrace([]);
+              resetSimulation();
               refresh((n) => n + 1);
               log("全メモリ・入力イメージを初期化");
             }}
@@ -253,37 +296,71 @@ export function App() {
             selected={selected}
             onSelect={setSelected}
           />
-          <TrainingPanel
-            key={filename}
-            inputs={names.filter((n) => device(n)?.kind === "X")}
-            outputs={names.filter((n) => device(n)?.kind === "Y")}
-            memory={plc.current.memory}
-            inputImage={plc.current.inputs}
-            running={running}
-            blocked={!!errors.length}
-            defaultBcdInput={
-              program.instructions
-                .flatMap((i) => i.operands)
-                .map(group)
-                .find((g) => g?.start.kind === "X" && g.count === 4)?.start.name
-            }
-            defaultBcdOutput={
-              program.instructions
-                .flatMap((i) => i.operands)
-                .map(group)
-                .find((g) => g?.start.kind === "Y" && g.count === 8)?.start.name
-            }
-            defaultForward={filename === "training_demo.csv" ? "Y1" : ""}
-            defaultReverse={filename === "training_demo.csv" ? "Y2" : ""}
-            onInput={(name, value) => {
-              plc.current.set(name, value);
-              refresh((n) => n + 1);
-            }}
-            onRun={() => {
-              if (scan()) setRunning(true);
-            }}
-            onStop={() => setRunning(false)}
-          />
+          {boardMode === "exam" ? (
+            <ExamPanel
+              plant={plant.current}
+              wiring={wiring}
+              memory={plc.current.memory}
+              running={running}
+              blocked={!!errors.length}
+              onOperate={(operation) => {
+                operation(plant.current);
+                plc.current.inputs = plant.current.inputImage(wiring);
+                refresh((n) => n + 1);
+              }}
+              onWiring={(value) => {
+                setRunning(false);
+                plc.current.reset();
+                plant.current.reset();
+                setLastTrace([]);
+                setWiring(value);
+                refresh((n) => n + 1);
+              }}
+              onRun={() => {
+                if (scan()) setRunning(true);
+              }}
+              onStop={() => {
+                plant.current.releaseButtons();
+                plc.current.inputs = plant.current.inputImage(wiring);
+                setRunning(false);
+                refresh((n) => n + 1);
+              }}
+            />
+          ) : (
+            <TrainingPanel
+              key={filename}
+              inputs={names.filter((n) => device(n)?.kind === "X")}
+              outputs={names.filter((n) => device(n)?.kind === "Y")}
+              memory={plc.current.memory}
+              inputImage={plc.current.inputs}
+              running={running}
+              blocked={!!errors.length}
+              defaultBcdInput={
+                program.instructions
+                  .flatMap((i) => i.operands)
+                  .map(group)
+                  .find((g) => g?.start.kind === "X" && g.count === 4)?.start
+                  .name
+              }
+              defaultBcdOutput={
+                program.instructions
+                  .flatMap((i) => i.operands)
+                  .map(group)
+                  .find((g) => g?.start.kind === "Y" && g.count === 8)?.start
+                  .name
+              }
+              defaultForward={filename === "training_demo.csv" ? "Y1" : ""}
+              defaultReverse={filename === "training_demo.csv" ? "Y2" : ""}
+              onInput={(name, value) => {
+                plc.current.set(name, value);
+                refresh((n) => n + 1);
+              }}
+              onRun={() => {
+                if (scan()) setRunning(true);
+              }}
+              onStop={() => setRunning(false)}
+            />
+          )}
         </div>
         <details className="analysis-tools" open={!program.adapter}>
           <summary>命令一覧・デバイス・クロスリファレンス（詳細解析）</summary>
@@ -343,7 +420,7 @@ export function App() {
                 <span>LIVE MEMORY</span>
               </div>
               <p className="muted">
-                Xは次スキャンの入力イメージ。停止中に初期値を設定できます。D値はEnterまたはフォーカス移動で確定、Escで取消。
+                Xは次スキャンの入力イメージ。試験盤モデルではXを盤側で操作します。停止中に初期値を設定できます。D値はEnterまたはフォーカス移動で確定、Escで取消。
               </p>
               {names.map((name) => {
                 const d = device(name)!;
@@ -352,6 +429,8 @@ export function App() {
                     ? (plc.current.inputs[name] ?? 0)
                     : plc.current.read(name);
                 const editable = ["X", "Y", "M", "D"].includes(d.kind);
+                const controllable =
+                  editable && (d.kind !== "X" || boardMode === "generic");
                 const monitored =
                   editable || d.kind === "T" || name === "SM400";
                 return (
@@ -398,7 +477,7 @@ export function App() {
                       </label>
                     ) : (
                       <button
-                        disabled={!editable || (running && d.kind !== "X")}
+                        disabled={!controllable || (running && d.kind !== "X")}
                         className={value ? "on" : ""}
                         onClick={() => {
                           plc.current.set(name, value ? 0 : 1);
