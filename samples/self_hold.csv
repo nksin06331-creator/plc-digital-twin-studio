@@ -1,0 +1,6 @@
+step,instruction,operand,comment
+0,LD,X0,始動
+1,OR,Y0,自己保持
+2,ANI,X1,停止入力ONで解除
+3,OUT,Y0,保持出力
+4,END,,
