@@ -1,0 +1,17 @@
+step,instruction,operand,comment
+0,LD,X0,始動
+1,OR,M0,自己保持
+2,ANI,X1,停止
+3,OUT,M0,運転保持
+4,LD,M0,運転表示
+5,OUT,Y0,運転ランプ
+6,LD,M0,モーター条件
+7,AND,X2,正逆切替
+8,OUT,Y1,正転
+9,LD,M0,モーター条件
+10,ANI,X2,正逆切替
+11,OUT,Y2,逆転
+12,LD,SM400,常時ON
+13,MOV,K1X10 D0,BCD設定読込
+14,BCD,D0 K2Y10,数値表示
+15,END,,

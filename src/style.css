@@ -369,3 +369,561 @@ td:last-child {
     flex-wrap: wrap;
   }
 }
+/* Ladder and training panel */
+.training-panel {
+  border-top: 3px solid #58d8bc;
+}
+.board-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+.board-section {
+  background: #162335;
+  border: 1px solid #34465e;
+  padding: 16px;
+  border-radius: 8px;
+}
+.board-section h3 {
+  margin: 0 0 16px;
+  display: flex;
+  justify-content: space-between;
+}
+.board-section h3 span {
+  color: #6e87a5;
+  font-size: 10px;
+}
+.switch-grid,
+.lamp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(115px, 1fr));
+  gap: 12px;
+}
+.panel-device {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 10px;
+  background: #0d1725;
+  border: 1px solid #263a53;
+  border-radius: 7px;
+  padding: 14px 8px;
+  min-width: 0;
+}
+.panel-device code {
+  color: #91b1d5;
+  font-size: 13px;
+}
+.device-label {
+  width: 100%;
+  text-align: center;
+  background: transparent;
+  border-color: transparent;
+  font-size: 11px;
+  padding: 3px;
+}
+.panel-device select {
+  font-size: 10px;
+}
+.panel-device small {
+  font-size: 10px;
+  color: #a5b5ca;
+}
+.selector-switch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  background: #172b3c;
+  width: 68px;
+  height: 78px;
+  font-size: 11px;
+}
+.switch-lever {
+  display: block;
+  background: #8394a6;
+  width: 13px;
+  height: 31px;
+  border-radius: 3px;
+  transform: rotate(-32deg);
+  box-shadow: 3px 3px 4px #000;
+}
+.lit .switch-lever {
+  transform: rotate(32deg);
+  background: #63dfbb;
+}
+.physical-button {
+  height: 66px;
+  width: 66px;
+  border-radius: 50%;
+  border: 6px solid #3c4c5c;
+  background: radial-gradient(circle at 35% 25%, #4fa99a, #1b5c50);
+  box-shadow: 0 5px 0 #07121a;
+  touch-action: none;
+  user-select: none;
+  font-size: 10px;
+  padding: 0;
+}
+.physical-button.lit {
+  box-shadow: 0 1px 0 #07121a;
+  transform: translateY(4px);
+}
+.panel-lamp {
+  width: 60px;
+  height: 60px;
+  border: 6px solid #344455;
+  border-radius: 50%;
+  background: #12342d;
+  display: grid;
+  place-items: center;
+  color: #c0d4e8;
+}
+.panel-lamp.red {
+  background: #3e2026;
+}
+.panel-lamp.amber {
+  background: #40331b;
+}
+.panel-lamp.illuminated {
+  background: #4cf3b1;
+  box-shadow:
+    0 0 23px #34d39977,
+    inset 0 0 12px #dcfff2;
+  color: #102c23;
+}
+.panel-lamp.red.illuminated {
+  background: #ff646b;
+  box-shadow: 0 0 23px #ff646b77;
+}
+.panel-lamp.amber.illuminated {
+  background: #ffd05b;
+  box-shadow: 0 0 23px #ffd05b77;
+}
+.panel-lamp.relay,
+.panel-lamp.buzzer {
+  border-radius: 10px;
+}
+.board-instruments {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+.instrument {
+  border: 1px solid #314158;
+  border-radius: 8px;
+  padding: 18px;
+  background: #0c1623;
+  text-align: center;
+  min-width: 0;
+}
+.instrument h3 {
+  margin-top: 0;
+}
+.instrument label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  margin: 10px 0;
+}
+.instrument input,
+.instrument select {
+  width: 120px;
+  margin: 0;
+}
+.instrument .bcd-dial {
+  font-size: 38px;
+  text-align: center;
+  width: 85px;
+  margin: 14px;
+}
+.motor {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100px;
+  height: 100px;
+  background: radial-gradient(#334962, #132233);
+  border: 7px solid #4c637b;
+  border-radius: 50%;
+  margin: 12px auto;
+}
+.motor > span {
+  position: absolute;
+  background: #112337;
+  padding: 4px;
+  border-radius: 50%;
+  font-family: monospace;
+}
+.rotor {
+  font-size: 75px;
+  line-height: 1;
+  color: #85a4c3;
+}
+.rotating .rotor {
+  animation: motor-spin 0.8s linear infinite;
+  color: #54e1b5;
+}
+.reverse .rotor {
+  animation-direction: reverse;
+}
+.motor.conflict {
+  border-color: #ff707a;
+}
+.seven-segment {
+  font:
+    60px ui-monospace,
+    monospace;
+  letter-spacing: 10px;
+  display: block;
+  padding: 15px;
+  background: #050d14;
+  color: #ff665a;
+  text-shadow: 0 0 12px #ff665a77;
+  border: 3px solid #263b4f;
+  border-radius: 6px;
+  margin-top: 20px;
+}
+.run-button {
+  border-color: #4aaf94;
+  background: #183f38;
+  white-space: nowrap;
+}
+.ladder-canvas {
+  overflow: auto;
+  max-height: 700px;
+  background: #0b1521;
+  padding: 12px;
+  font-family: ui-monospace, monospace;
+}
+.ladder-rung {
+  display: flex;
+  align-items: stretch;
+  min-width: max-content;
+  min-height: 110px;
+  padding: 0 10px;
+  color: #70859c;
+}
+.rung-number {
+  align-self: center;
+  width: 30px;
+  font-size: 10px;
+}
+.left-rail,
+.right-rail {
+  width: 3px;
+  background: #8399b3;
+  flex-shrink: 0;
+}
+.ladder-series {
+  display: flex;
+  align-items: center;
+}
+.ladder-parallel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-left: 2px solid #70859c;
+  border-right: 2px solid #70859c;
+  margin: 20px 0;
+}
+.ladder-parallel > div {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+.ladder-parallel > div:after {
+  content: "";
+  height: 2px;
+  flex: 1;
+  background: #70859c;
+}
+.ladder-contact,
+.ladder-output {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-self: center;
+  align-items: center;
+  justify-content: center;
+  min-width: 110px;
+  min-height: 88px;
+  border: 0;
+  background: transparent !important;
+  color: #91a6bd;
+  padding: 10px 14px;
+}
+.ladder-contact span,
+.ladder-output span {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.ladder-contact b,
+.ladder-output b {
+  font-size: 23px;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.ladder-contact small,
+.ladder-output small {
+  font-size: 9px;
+  color: inherit;
+}
+.ladder-contact:before,
+.ladder-contact:after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  height: 2px;
+  background: currentColor;
+  width: 10px;
+}
+.ladder-contact:before {
+  left: 0;
+}
+.ladder-contact:after {
+  right: 0;
+}
+.ladder-wire {
+  align-self: center;
+  height: 2px;
+  background: currentColor;
+  min-width: 35px;
+  flex: 1;
+}
+.conducting {
+  color: #53e3b1 !important;
+}
+.ladder-contact:hover,
+.ladder-output:hover {
+  outline: 1px solid #48657d;
+}
+.ladder-panel .panel-title {
+  position: sticky;
+  top: 0;
+}
+.open-contact {
+  color: #75879a;
+}
+@keyframes motor-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rotating .rotor {
+    animation: none;
+  }
+}
+@media (max-width: 1000px) {
+  .board-grid {
+    grid-template-columns: 1fr;
+  }
+  .board-instruments {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 700px) {
+  .training-panel .panel-title {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .board-section {
+    padding: 10px;
+  }
+  .panel-device {
+    padding: 10px 5px;
+  }
+  .ladder-canvas {
+    max-height: 500px;
+  }
+}
+.live-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 410px;
+  gap: 16px;
+  align-items: start;
+}
+.live-workbench > .panel {
+  max-height: 850px;
+  overflow: auto;
+}
+.live-workbench .training-panel .panel-title {
+  flex-direction: column;
+  align-items: flex-start;
+}
+.live-workbench .board-grid,
+.live-workbench .board-instruments {
+  grid-template-columns: 1fr;
+}
+.analysis-tools {
+  margin-top: 20px;
+}
+.analysis-tools > summary {
+  cursor: pointer;
+  padding: 15px;
+  border: 1px solid #2c425e;
+  border-radius: 6px;
+  color: #96b2d3;
+  font-size: 12px;
+}
+.live-workbench .switch-grid,
+.live-workbench .lamp-grid {
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+}
+@media (max-width: 1150px) {
+  .live-workbench {
+    grid-template-columns: 1fr;
+  }
+  .live-workbench > .panel {
+    max-height: 700px;
+  }
+  .live-workbench .board-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .live-workbench .board-instruments {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 700px) {
+  .live-workbench .board-grid,
+  .live-workbench .board-instruments {
+    grid-template-columns: 1fr;
+  }
+}
+.live-workbench {
+  grid-template-columns: minmax(0, 1fr) 460px;
+}
+.training-panel {
+  display: flex;
+  flex-direction: column;
+}
+.training-panel .panel-title {
+  order: -4;
+}
+.training-panel > .notice {
+  order: -3;
+}
+.configure-board {
+  order: -2;
+  align-self: flex-end;
+  font-size: 11px;
+  margin-bottom: 12px;
+}
+.board-instruments {
+  order: -1;
+}
+.live-workbench .board-instruments {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin: 0 0 16px;
+}
+.live-workbench .board-grid {
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.live-workbench .board-section {
+  padding: 10px;
+}
+.live-workbench .switch-grid,
+.live-workbench .lamp-grid {
+  grid-template-columns: repeat(auto-fit, minmax(77px, 1fr));
+  gap: 7px;
+}
+.live-workbench .panel-device {
+  padding: 10px 3px;
+  gap: 6px;
+}
+.live-workbench .instrument {
+  padding: 12px 4px;
+}
+.live-workbench .instrument h3 {
+  font-size: 10px;
+}
+.live-workbench .instrument small {
+  font-size: 8px;
+}
+.live-workbench .instrument p {
+  font-size: 11px;
+  margin: 5px;
+}
+.live-workbench .motor {
+  width: 70px;
+  height: 70px;
+  border-width: 5px;
+  margin: 8px auto;
+}
+.live-workbench .rotor {
+  font-size: 50px;
+}
+.live-workbench .seven-segment {
+  font-size: 35px;
+  padding: 8px 3px;
+  letter-spacing: 4px;
+  margin-top: 25px;
+}
+.live-workbench .instrument .bcd-dial {
+  font-size: 30px;
+  width: 65px;
+  margin: 20px 0;
+}
+.training-panel:not(.configuring) .panel-device select,
+.training-panel:not(.configuring) .instrument label,
+.training-panel:not(.configuring) .instrument .muted {
+  display: none;
+}
+.live-workbench .physical-button {
+  width: 55px;
+  height: 55px;
+}
+.live-workbench .selector-switch {
+  width: 58px;
+  height: 65px;
+}
+.live-workbench .switch-lever {
+  height: 25px;
+}
+.live-workbench .panel-lamp {
+  width: 50px;
+  height: 50px;
+}
+.live-workbench .device-label {
+  font-size: 10px;
+  padding: 2px;
+}
+.training-panel.configuring .board-grid {
+  grid-template-columns: 1fr;
+}
+.training-panel.configuring .board-instruments {
+  grid-template-columns: 1fr;
+}
+.training-panel.configuring .instrument label {
+  max-width: 300px;
+  margin: 10px auto;
+}
+@media (max-width: 1150px) {
+  .live-workbench {
+    grid-template-columns: 1fr;
+  }
+  .live-workbench .board-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .live-workbench .switch-grid,
+  .live-workbench .lamp-grid {
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  }
+}
+@media (max-width: 500px) {
+  .live-workbench .board-grid {
+    grid-template-columns: 1fr;
+  }
+  .live-workbench .board-section h3 {
+    font-size: 11px;
+  }
+  .live-workbench .switch-grid,
+  .live-workbench .lamp-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
