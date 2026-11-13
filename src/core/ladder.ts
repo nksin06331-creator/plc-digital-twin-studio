@@ -1,0 +1,52 @@
+import type { Instruction, Program } from "./model";
+import { validate } from "./engine";
+import { comparison } from "./operands";
+export type Logic =
+  | { kind: "contact"; instruction: Instruction }
+  | { kind: "and"; left: Logic; right: Logic }
+  | { kind: "or"; left: Logic; right: Logic };
+export interface Rung {
+  condition: Logic;
+  output: Instruction;
+}
+export function buildLadder(program: Program): {
+  rungs: Rung[];
+  errors: string[];
+} {
+  const errors = validate(program);
+  if (errors.length) return { rungs: [], errors };
+  let current: Logic | null = null,
+    outputSeen = false;
+  const blocks: Logic[] = [],
+    branches: Logic[] = [],
+    rungs: Rung[] = [];
+  const join = (kind: "and" | "or", a: Logic, b: Logic): Logic => ({
+    kind,
+    left: a,
+    right: b,
+  });
+  for (const instruction of program.instructions) {
+    const o = instruction.opcode,
+      cmp = comparison.exec(o),
+      leaf: Logic = { kind: "contact", instruction };
+    if (["LD", "LDI", "LDP"].includes(o) || cmp?.[1] === "LD") {
+      if (current && !outputSeen) blocks.push(current);
+      current = leaf;
+      outputSeen = false;
+    } else if (["AND", "ANI"].includes(o) || cmp?.[1] === "AND")
+      current = join("and", current!, leaf);
+    else if (["OR", "ORI"].includes(o) || cmp?.[1] === "OR")
+      current = join("or", current!, leaf);
+    else if (o === "ANB" || o === "ORB")
+      current = join(o === "ANB" ? "and" : "or", blocks.pop()!, current!);
+    else if (o === "MPS") branches.push(current!);
+    else if (o === "MRD") current = branches.at(-1)!;
+    else if (o === "MPP") current = branches.pop()!;
+    else if (o === "END") break;
+    else {
+      rungs.push({ condition: current!, output: instruction });
+      outputSeen = true;
+    }
+  }
+  return { rungs, errors };
+}

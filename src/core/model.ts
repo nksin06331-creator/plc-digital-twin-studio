@@ -4,6 +4,7 @@ export interface Instruction {
   operands: string[];
   sourceLine: number;
   comment: string;
+  operandSourceLines?: number[];
 }
 export interface Diagnostic {
   severity: "error" | "warning";
@@ -29,9 +30,36 @@ export const supported = new Set([
   "RST",
   "MOV",
   "END",
+  "ANB",
+  "ORB",
+  "MPS",
+  "MRD",
+  "MPP",
+  "LDP",
+  "INCP",
+  "BCD",
+  "*",
+  "LD=",
+  "LD>",
+  "LD>=",
+  "LD<",
+  "LD<=",
+  "LD<>",
+  "AND=",
+  "AND>",
+  "AND>=",
+  "AND<",
+  "AND<=",
+  "AND<>",
+  "OR=",
+  "OR>",
+  "OR>=",
+  "OR<",
+  "OR<=",
+  "OR<>",
 ]);
 export function device(value: string) {
-  const m = /^(X|Y|M|D|T|C)([0-9A-F]+)$/i.exec(value);
+  const m = /^(SM|X|Y|M|D|T|C)([0-9A-F]+)$/i.exec(value);
   if (!m) return null;
   const kind = m[1].toUpperCase();
   if (!["X", "Y"].includes(kind) && !/^\d+$/.test(m[2])) return null;

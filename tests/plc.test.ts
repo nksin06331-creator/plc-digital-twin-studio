@@ -186,7 +186,6 @@ describe("PLC scan semantics", () => {
   });
   it.each([
     ["LD,X0", "ANB,", "OUT,Y0", "END,"],
-    ["LD,X0", "LD,X1", "ORB,", "OUT,Y0", "END,"],
     ["LD,X0", "MOV,K1 X0", "END,"],
     ["LD,D0", "OUT,Y0", "END,"],
     ["LD,X0", "OUT,Y0"],

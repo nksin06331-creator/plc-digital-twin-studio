@@ -3,7 +3,10 @@ export const MAX_BYTES = 2 * 1024 * 1024;
 export const MAX_ROWS = 20000;
 // Explicit demonstration adapter; never infer a GX Works2 schema from column positions.
 export const sampleHeader = ["step", "instruction", "operand", "comment"];
-export function parseCsv(text: string): { rows: string[][]; lines: number[] } {
+export function parseCsv(
+  text: string,
+  delimiter = ",",
+): { rows: string[][]; lines: number[] } {
   const rows: string[][] = [],
     lines: number[] = [];
   let row: string[] = [],
@@ -44,7 +47,7 @@ export function parseCsv(text: string): { rows: string[][]; lines: number[] } {
     if (c === '"') {
       if (field || closed) throw Error("不正な引用符");
       quoted = true;
-    } else if (c === ",") {
+    } else if (c === delimiter) {
       cell();
     } else if (c === "\n" || c === "\r") {
       if (c === "\r" && text[i + 1] === "\n") i++;
@@ -71,12 +74,108 @@ export function parseText(text: string, encoding = "UTF-8"): Program {
   try {
     if (new TextEncoder().encode(text).length > MAX_BYTES)
       throw Error("入力サイズ上限は2 MiBです");
-    const { rows, lines } = parseCsv(text.replace(/^\uFEFF/, ""));
+    const clean = text.replace(/^\uFEFF/, "");
+    const isGx = clean
+      .split(/\r?\n/)
+      .slice(0, 4)
+      .some((line) => line.startsWith('"ステップ番号"\t"行間ステートメント"'));
+    const { rows, lines } = parseCsv(clean, isGx ? "\t" : ",");
     result.preview = rows.slice(0, 8);
     if (!rows.length) throw Error("空ファイルです");
+    if (isGx) {
+      const header = [
+        "ステップ番号",
+        "行間ステートメント",
+        "命令",
+        "I/O(デバイス)",
+        "空欄",
+        "PIステートメント",
+        "ノート",
+      ];
+      const index = rows.findIndex(
+        (r) => JSON.stringify(r) === JSON.stringify(header),
+      );
+      if (index < 0 || index > 3) throw Error("未知のGX Works2列構成です");
+      result.adapter = "gx-works2-list-ja-v1";
+      let previous = -1;
+      for (let n = index + 1; n < rows.length; n++) {
+        const r = rows[n],
+          sourceLine = lines[n];
+        if (r.every((v) => !v.trim())) continue;
+        if (r.length !== 7 || r[4].trim()) {
+          result.diagnostics.push({
+            severity: "error",
+            sourceLine,
+            message: "GX行の列数または空欄列が不正です",
+          });
+          continue;
+        }
+        const comment = [r[1], r[5], r[6]].filter(Boolean).join(" / ");
+        if (!r[0] && !r[2] && r[3].trim()) {
+          const last = result.instructions.at(-1);
+          if (!last)
+            result.diagnostics.push({
+              severity: "error",
+              sourceLine,
+              message: "先行命令のないオペランド継続行",
+            });
+          else {
+            last.operands.push(r[3].trim().toUpperCase());
+            last.operandSourceLines?.push(sourceLine);
+            if (comment) last.comment += (last.comment ? " / " : "") + comment;
+          }
+          continue;
+        }
+        if (!r[0] && !r[2] && !r[3] && comment) {
+          result.diagnostics.push({
+            severity: "warning",
+            sourceLine,
+            message: "ステートメント行: " + comment,
+          });
+          continue;
+        }
+        if (
+          !/^\d+$/.test(r[0]) ||
+          !Number.isSafeInteger(Number(r[0])) ||
+          !r[2].trim()
+        ) {
+          result.diagnostics.push({
+            severity: "error",
+            sourceLine,
+            message: "GX行のステップまたは命令が不正です",
+          });
+          continue;
+        }
+        const step = Number(r[0]),
+          opcode = r[2].trim().toUpperCase();
+        if (step <= previous)
+          result.diagnostics.push({
+            severity: "error",
+            sourceLine,
+            message: "ステップ番号が重複または逆順です",
+          });
+        previous = step;
+        result.instructions.push({
+          step,
+          opcode,
+          operands: r[3].trim() ? [r[3].trim().toUpperCase()] : [],
+          sourceLine,
+          operandSourceLines: r[3].trim() ? [sourceLine] : [],
+          comment,
+        });
+        if (!supported.has(opcode))
+          result.diagnostics.push({
+            severity: "warning",
+            sourceLine,
+            message: "未対応命令: " + opcode,
+          });
+      }
+      if (!result.instructions.length) throw Error("命令がありません");
+      return result;
+    }
     if (JSON.stringify(rows[0]) !== JSON.stringify(sampleHeader))
       throw Error(
-        "未知の列構成です。GX Works2実CSVは未検証です。サンプル用ヘッダーと一致しません",
+        "未知の列構成です。検証済みGX Works2ヘッダーまたはサンプル用ヘッダーと一致しません",
       );
     result.adapter = "sample-v1";
     let previous = -1;
@@ -130,7 +229,7 @@ export function parseText(text: string, encoding = "UTF-8"): Program {
 }
 export function parseBytes(
   bytes: Uint8Array,
-  choice: "auto" | "utf-8" | "shift_jis" = "auto",
+  choice: "auto" | "utf-8" | "shift_jis" | "utf-16le" | "utf-16be" = "auto",
 ): Program {
   if (bytes.length > MAX_BYTES)
     return {
@@ -139,7 +238,14 @@ export function parseBytes(
         { severity: "error", message: "入力サイズ上限は2 MiBです" },
       ],
     };
-  let encoding = choice === "auto" ? "utf-8" : choice;
+  let encoding =
+    choice === "auto"
+      ? bytes[0] === 0xff && bytes[1] === 0xfe
+        ? "utf-16le"
+        : bytes[0] === 0xfe && bytes[1] === 0xff
+          ? "utf-16be"
+          : "utf-8"
+      : choice;
   let text: string;
   try {
     text = new TextDecoder(encoding, { fatal: true }).decode(bytes);
