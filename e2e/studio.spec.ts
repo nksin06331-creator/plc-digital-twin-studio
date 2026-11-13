@@ -35,13 +35,11 @@ test("unknown CSV preview blocks simulation and renders text safely", async ({
   page,
 }) => {
   await page.goto("/");
-  await page
-    .locator("input[type=file]")
-    .setInputFiles({
-      name: "unknown.csv",
-      mimeType: "text/csv",
-      buffer: Buffer.from("unknown,columns\n<img src=x onerror=alert(1)>,END"),
-    });
+  await page.locator("input[type=file]").setInputFiles({
+    name: "unknown.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("unknown,columns\n<img src=x onerror=alert(1)>,END"),
+  });
   await expect(page.locator(".preview")).toContainText(
     "<img src=x onerror=alert(1)>",
   );
@@ -70,4 +68,52 @@ test("MOV sample sets D values and mobile layout stays within viewport", async (
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
+});
+
+test("D initial value accepts negative typing without changing memory mid-edit", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "mov_example", exact: true }).click();
+  const input = page.getByRole("spinbutton", { name: "D0 初期値" });
+  await input.fill("");
+  await input.pressSequentially("-123");
+  await expect(input).toHaveValue("-123");
+  await input.press("Enter");
+  await expect(
+    page
+      .locator(".device")
+      .filter({ has: page.getByText("D0", { exact: true }) }),
+  ).toContainText("65413 / -123");
+});
+
+test("selected step remains selected after scanning", async ({ page }) => {
+  await page.goto("/");
+  await page.locator(".step").filter({ hasText: /^1$/ }).click();
+  await page.getByRole("button", { name: "▶ 1スキャン", exact: true }).click();
+  await expect(page.locator("#program .panel-title")).toContainText(
+    "選択 STEP 1",
+  );
+});
+
+test("invalid or cancelled D edits preserve memory", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "mov_example", exact: true }).click();
+  const input = page.getByRole("spinbutton", { name: "D0 初期値" });
+  const row = page
+    .locator(".device")
+    .filter({ has: page.getByText("D0", { exact: true }) });
+  await input.fill("42");
+  await input.press("Enter");
+  await expect(row).toContainText("42 / 42");
+  for (const draft of ["", "65536", "-32769", "1.5"]) {
+    await input.fill(draft);
+    await input.press("Enter");
+    await expect(input).toHaveValue("42");
+    await expect(row).toContainText("42 / 42");
+  }
+  await input.fill("123");
+  await input.press("Escape");
+  await expect(input).toHaveValue("42");
+  await expect(row).toContainText("42 / 42");
 });

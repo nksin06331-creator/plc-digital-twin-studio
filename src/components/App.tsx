@@ -32,7 +32,6 @@ export function App() {
   const scan = useCallback(() => {
     try {
       const trace = plc.current.scan(program);
-      setSelected(trace.at(-1)?.step ?? null);
       refresh((n) => n + 1);
       log(`スキャン ${plc.current.scans} 完了 · ${trace.length}命令`);
     } catch (e) {
@@ -272,7 +271,7 @@ export function App() {
               <span>LIVE MEMORY</span>
             </div>
             <p className="muted">
-              Xは次スキャンの入力イメージ。停止中に初期値を設定できます。
+              Xは次スキャンの入力イメージ。停止中に初期値を設定できます。D値はEnterまたはフォーカス移動で確定、Escで取消。
             </p>
             {names.map((name) => {
               const d = device(name)!;
@@ -293,12 +292,28 @@ export function App() {
                         min="-32768"
                         max="65535"
                         disabled={running}
-                        value={value}
-                        onChange={(e) => {
+                        key={`${name}:${revision}`}
+                        defaultValue={value}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") e.currentTarget.blur();
+                          if (e.key === "Escape") {
+                            e.currentTarget.value = String(value);
+                            e.currentTarget.blur();
+                          }
+                        }}
+                        onBlur={(e) => {
                           try {
-                            plc.current.set(name, Number(e.target.value));
+                            if (!/^-?\d+$/.test(e.currentTarget.value))
+                              throw Error(
+                                "D初期値は−32768〜65535の整数で指定してください",
+                              );
+                            plc.current.set(
+                              name,
+                              Number(e.currentTarget.value),
+                            );
                             refresh((n) => n + 1);
                           } catch (err) {
+                            e.currentTarget.value = String(value);
                             log((err as Error).message);
                           }
                         }}
