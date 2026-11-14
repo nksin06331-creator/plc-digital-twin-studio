@@ -11,9 +11,12 @@ import { LadderView } from "./LadderView";
 import { TrainingPanel } from "./TrainingPanel";
 import { ExamPanel } from "./ExamPanel";
 import { ExamPlant, defaultWiring, type ExamWiring } from "../core/plant/exam";
+import { Grade2Guide } from "./Grade2Guide";
+import grade2 from "../../samples/grade2_comprehensive.csv?raw";
 import exam from "../../samples/exam_conveyor.csv?raw";
 import training from "../../samples/training_demo.csv?raw";
 const samples: Record<string, string> = {
+  grade2_comprehensive: grade2,
   exam_conveyor: exam,
   basic_and: basic,
   training_demo: training,
@@ -32,6 +35,7 @@ export function App() {
     [logs, setLogs] = useState<string[]>([]),
     [extra, setExtra] = useState<string[]>([]),
     [newDevice, setNewDevice] = useState("M0");
+  const [showGrade2Guide, setShowGrade2Guide] = useState(false);
   const [lastTrace, setLastTrace] = useState<ScanTrace[]>([]);
   const [boardMode, setBoardMode] = useState<"exam" | "generic">("exam");
   const [wiring, setWiring] = useState<ExamWiring>(defaultWiring);
@@ -88,7 +92,17 @@ export function App() {
     setRunning(false);
     setProgram(parseText(text));
     setFilename(name);
-    resetSimulation();
+    if (name === "grade2_comprehensive.csv") {
+      const nextWiring = defaultWiring();
+      setBoardMode("exam");
+      setWiring(nextWiring);
+      plc.current.reset();
+      plant.current.reset();
+      plant.current.digitalSwitch = 2;
+      plc.current.inputs = plant.current.inputImage(nextWiring);
+      setLastTrace([]);
+    } else resetSimulation();
+    setShowGrade2Guide(name === "grade2_comprehensive.csv");
     refresh((n) => n + 1);
     setSelected(null);
     setLogs([]);
@@ -107,6 +121,7 @@ export function App() {
       setRunning(false);
       setProgram(p);
       setFilename(f.name);
+      setShowGrade2Guide(false);
       resetSimulation();
       refresh((n) => n + 1);
       setLogs([]);
@@ -219,8 +234,16 @@ export function App() {
         </label>
         <h3>デモ回路</h3>
         {Object.keys(samples).map((s) => (
-          <button key={s} onClick={() => load(samples[s], s + ".csv")}>
-            {s}
+          <button
+            key={s}
+            title={
+              s === "grade2_comprehensive"
+                ? "試験盤・標準割付・右端・番号7・DSW2へ初期化"
+                : undefined
+            }
+            onClick={() => load(samples[s], s + ".csv")}
+          >
+            {s === "grade2_comprehensive" ? "2級対策・総合演習" : s}
           </button>
         ))}
         <p className="notice">
@@ -289,6 +312,13 @@ export function App() {
         <p className="notice">
           教育用の簡易モデルです。実機との完全一致を保証しません。実設備の検証・制御には使用しないでください。
         </p>
+        {showGrade2Guide && (
+          <Grade2Guide
+            key={program.instructions[0]?.comment}
+            memory={plc.current.memory}
+            running={running}
+          />
+        )}
         <div className="live-workbench">
           <LadderView
             program={program}

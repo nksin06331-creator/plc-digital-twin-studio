@@ -347,12 +347,25 @@ export function ExamPanel({
             >
               <small>NO.{plant.palletCode}</small>
               {[2, 1, 0].map((bit) => (
-                <span
+                <button
                   key={bit}
-                  className={
-                    plant.palletCode & (1 << bit) ? "bolt fitted" : "bolt"
+                  type="button"
+                  className="pallet-bolt"
+                  aria-label={`ネジ LS${bit + 3}（重み${1 << bit}）`}
+                  aria-pressed={!!(plant.palletCode & (1 << bit))}
+                  title={`LS${bit + 3} / 重み${1 << bit}: ${plant.palletCode & (1 << bit) ? "取り付け済み（クリックで外す）" : "取り外し済み（クリックで付ける）"}`}
+                  onClick={() =>
+                    onOperate((p) => {
+                      p.palletCode ^= 1 << bit;
+                    })
                   }
-                />
+                >
+                  <span
+                    className={
+                      plant.palletCode & (1 << bit) ? "bolt fitted" : "bolt"
+                    }
+                  />
+                </button>
               ))}
             </div>
             <div className="left-sensors">
@@ -458,19 +471,47 @@ export function ExamPanel({
             )}
             <div className="exam-control dsw-control">
               <span>DSW</span>
-              <select
-                aria-label="DSW デジタルスイッチ"
-                value={plant.digitalSwitch}
-                onChange={(e) =>
-                  onOperate((p) => {
-                    p.digitalSwitch = Number(e.target.value);
-                  })
-                }
-              >
-                {Array.from({ length: 10 }, (_, n) => (
-                  <option key={n}>{n}</option>
-                ))}
-              </select>
+              <div className="dsw-thumbwheel">
+                <button
+                  type="button"
+                  className="dsw-step"
+                  aria-label="DSWを1増やす"
+                  title="1増やす（9の次は0）"
+                  onClick={() =>
+                    onOperate((p) => {
+                      p.digitalSwitch = (p.digitalSwitch + 1) % 10;
+                    })
+                  }
+                >
+                  ＋
+                </button>
+                <select
+                  aria-label="DSW デジタルスイッチ"
+                  value={plant.digitalSwitch}
+                  onChange={(e) =>
+                    onOperate((p) => {
+                      p.digitalSwitch = Number(e.target.value);
+                    })
+                  }
+                >
+                  {Array.from({ length: 10 }, (_, n) => (
+                    <option key={n}>{n}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="dsw-step"
+                  aria-label="DSWを1減らす"
+                  title="1減らす（0の前は9）"
+                  onClick={() =>
+                    onOperate((p) => {
+                      p.digitalSwitch = (p.digitalSwitch + 9) % 10;
+                    })
+                  }
+                >
+                  −
+                </button>
+              </div>
               <small>BCD</small>
             </div>
             <div className="exam-display">
@@ -491,6 +532,9 @@ export function ExamPanel({
           RY1・RY2同時指令：相互インターロックとして搬送を停止しています。
         </p>
       )}
+      <p className="pallet-help">
+        パレット上のネジをクリックすると脱着できます。上から重み4・2・1で、番号と左端のLS5・LS4・LS3に連動します。
+      </p>
       <div className="exam-fixture">
         <label>
           パレット番号

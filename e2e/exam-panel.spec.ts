@@ -194,3 +194,114 @@ test("interlocked relay commands warn and do not move the pallet", async ({
     "1.0000",
   );
 });
+
+test("pallet bolts toggle individually, synchronize the selector and drive left-end detection", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const upper = page.getByRole("button", {
+    name: "ネジ LS5（重み4）",
+    exact: true,
+  });
+  const middle = page.getByRole("button", {
+    name: "ネジ LS4（重み2）",
+    exact: true,
+  });
+  const lower = page.getByRole("button", {
+    name: "ネジ LS3（重み1）",
+    exact: true,
+  });
+  const number = page.getByRole("combobox", {
+    name: "パレット番号",
+    exact: true,
+  });
+  await expect(upper).toHaveAttribute("aria-pressed", "true");
+  await upper.click();
+  await expect(number).toHaveValue("3");
+  await expect(upper).toHaveAttribute("aria-pressed", "false");
+  await middle.focus();
+  await page.keyboard.press("Space");
+  await expect(number).toHaveValue("1");
+  await lower.focus();
+  await page.keyboard.press("Enter");
+  await expect(number).toHaveValue("0");
+  await page.getByRole("button", { name: "左端", exact: true }).click();
+  for (const name of ["LS3", "LS4", "LS5"])
+    await expect(
+      page.getByRole("status", { name: name + " センサー", exact: true }),
+    ).toContainText("OFF");
+  await upper.click();
+  await lower.click();
+  await expect(number).toHaveValue("5");
+  await expect(
+    page.getByRole("status", { name: "LS5 センサー", exact: true }),
+  ).toContainText("ON");
+  await expect(
+    page.getByRole("status", { name: "LS3 センサー", exact: true }),
+  ).toContainText("ON");
+  await expect(
+    page.getByRole("status", { name: "LS4 センサー", exact: true }),
+  ).toContainText("OFF");
+  await number.selectOption("2");
+  await expect(upper).toHaveAttribute("aria-pressed", "false");
+  await expect(middle).toHaveAttribute("aria-pressed", "true");
+  await expect(lower).toHaveAttribute("aria-pressed", "false");
+  await expect(
+    page.getByRole("status", { name: "LS4 センサー", exact: true }),
+  ).toContainText("ON");
+  await page.getByRole("button", { name: "中央", exact: true }).click();
+  await expect(
+    page.getByRole("status", { name: "LS4 センサー", exact: true }),
+  ).toContainText("OFF");
+});
+
+test("DSW plus and minus controls wrap decimal digits and drive BCD inputs and display", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const digit = page.getByRole("combobox", {
+    name: "DSW デジタルスイッチ",
+    exact: true,
+  });
+  const plus = page.getByRole("button", { name: "DSWを1増やす", exact: true }),
+    minus = page.getByRole("button", { name: "DSWを1減らす", exact: true });
+  await expect(digit).toHaveValue("0");
+  await minus.click();
+  await expect(digit).toHaveValue("9");
+  await page
+    .getByRole("button", { name: "▶ 試験運転開始", exact: true })
+    .click();
+  await expect(page.getByLabel("DPL 数値表示", { exact: true })).toHaveText(
+    "09",
+  );
+  await page.locator(".exam-wiring summary").click();
+  await expect(
+    page.locator('.terminal-cell b[title="DSW1 → X1C"]'),
+  ).toHaveClass(/terminal-active/);
+  await expect(
+    page.locator('.terminal-cell b[title="DSW2 → X1D"]'),
+  ).not.toHaveClass(/terminal-active/);
+  await expect(
+    page.locator('.terminal-cell b[title="DSW4 → X1E"]'),
+  ).not.toHaveClass(/terminal-active/);
+  await expect(
+    page.locator('.terminal-cell b[title="DSW8 → X1F"]'),
+  ).toHaveClass(/terminal-active/);
+  await plus.click();
+  await expect(digit).toHaveValue("0");
+  await expect(page.getByLabel("DPL 数値表示", { exact: true })).toHaveText(
+    "00",
+  );
+  await plus.focus();
+  await page.keyboard.press("Enter");
+  await expect(digit).toHaveValue("1");
+  await expect(page.getByLabel("DPL 数値表示", { exact: true })).toHaveText(
+    "01",
+  );
+  await digit.selectOption("5");
+  await minus.click();
+  await expect(digit).toHaveValue("4");
+  await expect(page.getByLabel("DPL 数値表示", { exact: true })).toHaveText(
+    "04",
+  );
+});
