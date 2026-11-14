@@ -210,3 +210,21 @@ describe("training circuit operations", () => {
     expect(plc.scans).toBe(0);
   });
 });
+
+describe("input-change scans without elapsed time", () => {
+  it("captures a short edge without advancing timer or counting it twice", () => {
+    const prog = p(["LD,X0", "OUT,T0 K3", "LDP,X1", "INCP,D0", "END,"]),
+      plc = new PLC();
+    plc.set("X0", 1);
+    plc.scan(prog, 100);
+    expect(plc.timers.T0).toBe(100);
+    plc.set("X1", 1);
+    plc.scan(prog, 0);
+    expect(plc.read("D0")).toBe(1);
+    expect(plc.timers.T0).toBe(100);
+    plc.set("X1", 0);
+    plc.scan(prog, 0);
+    expect(plc.read("D0")).toBe(1);
+    expect(plc.timers.T0).toBe(100);
+  });
+});
