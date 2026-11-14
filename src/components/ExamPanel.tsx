@@ -471,19 +471,47 @@ export function ExamPanel({
             )}
             <div className="exam-control dsw-control">
               <span>DSW</span>
-              <select
-                aria-label="DSW デジタルスイッチ"
-                value={plant.digitalSwitch}
-                onChange={(e) =>
-                  onOperate((p) => {
-                    p.digitalSwitch = Number(e.target.value);
-                  })
-                }
-              >
-                {Array.from({ length: 10 }, (_, n) => (
-                  <option key={n}>{n}</option>
-                ))}
-              </select>
+              <div className="dsw-thumbwheel">
+                <button
+                  type="button"
+                  className="dsw-step"
+                  aria-label="DSWを1増やす"
+                  title="1増やす（9の次は0）"
+                  onClick={() =>
+                    onOperate((p) => {
+                      p.digitalSwitch = (p.digitalSwitch + 1) % 10;
+                    })
+                  }
+                >
+                  ＋
+                </button>
+                <select
+                  aria-label="DSW デジタルスイッチ"
+                  value={plant.digitalSwitch}
+                  onChange={(e) =>
+                    onOperate((p) => {
+                      p.digitalSwitch = Number(e.target.value);
+                    })
+                  }
+                >
+                  {Array.from({ length: 10 }, (_, n) => (
+                    <option key={n}>{n}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="dsw-step"
+                  aria-label="DSWを1減らす"
+                  title="1減らす（0の前は9）"
+                  onClick={() =>
+                    onOperate((p) => {
+                      p.digitalSwitch = (p.digitalSwitch + 9) % 10;
+                    })
+                  }
+                >
+                  −
+                </button>
+              </div>
               <small>BCD</small>
             </div>
             <div className="exam-display">

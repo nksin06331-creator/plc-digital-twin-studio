@@ -254,3 +254,54 @@ test("pallet bolts toggle individually, synchronize the selector and drive left-
     page.getByRole("status", { name: "LS4 センサー", exact: true }),
   ).toContainText("OFF");
 });
+
+test("DSW plus and minus controls wrap decimal digits and drive BCD inputs and display", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const digit = page.getByRole("combobox", {
+    name: "DSW デジタルスイッチ",
+    exact: true,
+  });
+  const plus = page.getByRole("button", { name: "DSWを1増やす", exact: true }),
+    minus = page.getByRole("button", { name: "DSWを1減らす", exact: true });
+  await expect(digit).toHaveValue("0");
+  await minus.click();
+  await expect(digit).toHaveValue("9");
+  await page
+    .getByRole("button", { name: "▶ 試験運転開始", exact: true })
+    .click();
+  await expect(page.getByLabel("DPL 数値表示", { exact: true })).toHaveText(
+    "09",
+  );
+  await page.locator(".exam-wiring summary").click();
+  await expect(
+    page.locator('.terminal-cell b[title="DSW1 → X1C"]'),
+  ).toHaveClass(/terminal-active/);
+  await expect(
+    page.locator('.terminal-cell b[title="DSW2 → X1D"]'),
+  ).not.toHaveClass(/terminal-active/);
+  await expect(
+    page.locator('.terminal-cell b[title="DSW4 → X1E"]'),
+  ).not.toHaveClass(/terminal-active/);
+  await expect(
+    page.locator('.terminal-cell b[title="DSW8 → X1F"]'),
+  ).toHaveClass(/terminal-active/);
+  await plus.click();
+  await expect(digit).toHaveValue("0");
+  await expect(page.getByLabel("DPL 数値表示", { exact: true })).toHaveText(
+    "00",
+  );
+  await plus.focus();
+  await page.keyboard.press("Enter");
+  await expect(digit).toHaveValue("1");
+  await expect(page.getByLabel("DPL 数値表示", { exact: true })).toHaveText(
+    "01",
+  );
+  await digit.selectOption("5");
+  await minus.click();
+  await expect(digit).toHaveValue("4");
+  await expect(page.getByLabel("DPL 数値表示", { exact: true })).toHaveText(
+    "04",
+  );
+});

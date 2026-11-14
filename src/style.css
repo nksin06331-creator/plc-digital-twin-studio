@@ -1634,3 +1634,33 @@ td:last-child {
   color: #9bb1c9;
   margin: 12px 0 0;
 }
+
+.dsw-thumbwheel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.dsw-step {
+  width: 32px;
+  height: 24px;
+  padding: 0;
+  line-height: 20px;
+  border: 1px solid #6c7d70;
+  border-radius: 2px;
+  background: linear-gradient(#edf0e5, #a9b5a8);
+  color: #263f2d;
+  font-size: 16px;
+  font-weight: 700;
+  touch-action: manipulation;
+}
+.dsw-step:hover {
+  background: #e8f6e5;
+}
+.dsw-step:active {
+  background: #93ab95;
+}
+.dsw-step:focus-visible {
+  outline: 2px solid #13664b;
+  outline-offset: 1px;
+}
