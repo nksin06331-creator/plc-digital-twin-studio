@@ -1770,3 +1770,22 @@ td:last-child {
   border-radius: 3px;
   color: #9fb9d6;
 }
+.pagination {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 10px 0;
+  font-size: 11px;
+  color: #91aac7;
+}
+.pagination > span {
+  margin-right: auto;
+}
+.pagination button {
+  font-size: 10px;
+  padding: 5px 10px;
+}
+.paged-list {
+  min-width: 0;
+}
