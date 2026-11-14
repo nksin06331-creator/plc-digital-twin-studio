@@ -85,3 +85,76 @@ test("comprehensive demo sets its matching panel and wiring and fits mobile widt
     ),
   ).toBe(true);
 });
+
+test("quick pointer clicks start auto and capture emergency/reset without a timer tick", async ({
+  page,
+}) => {
+  await page.clock.install({ time: new Date("2026-11-14T00:00:00Z") });
+  await page.goto("/");
+  await page.clock.pauseAt(new Date("2026-11-14T00:01:00Z"));
+  await page
+    .getByRole("button", { name: "2級対策・総合演習", exact: true })
+    .click();
+  const status = page.getByRole("status", {
+    name: "自動運転の状態",
+    exact: true,
+  });
+  await expect(status).toContainText("スキャン停止中");
+  await page
+    .getByRole("button", { name: "▶ 試験運転開始", exact: true })
+    .click();
+  await expect(status).toContainText("SS0が手動");
+  await page.keyboard.down("KeyZ");
+  await page
+    .getByRole("button", { name: "SS0 切替スイッチ", exact: true })
+    .click();
+  await expect(status).toContainText("押し直してください");
+  await page.keyboard.up("KeyZ");
+  await expect(status).toContainText("準備OK");
+  await page
+    .getByRole("combobox", { name: "DSW デジタルスイッチ", exact: true })
+    .selectOption("0");
+  await expect(status).toContainText("DSWが0");
+  await page
+    .getByRole("combobox", { name: "DSW デジタルスイッチ", exact: true })
+    .selectOption("2");
+  await page.getByRole("button", { name: "中央", exact: true }).click();
+  await expect(status).toContainText("右端LS1がOFF");
+  await page.getByRole("button", { name: "右端", exact: true }).click();
+  await expect(status).toContainText("準備OK");
+  await page
+    .getByRole("button", { name: "PB1 押しボタン", exact: true })
+    .click();
+  await expect(
+    page.getByRole("status", { name: "RY1 リレー", exact: true }),
+  ).toContainText("ON");
+  await expect(status).toContainText("自動運転中");
+  await expect(page.locator(".work-pallet")).toHaveAttribute(
+    "data-position",
+    "1.0000",
+  );
+  await page.clock.runFor(100);
+  expect(
+    Number(await page.locator(".work-pallet").getAttribute("data-position")),
+  ).toBeLessThan(1);
+  await page
+    .getByRole("button", { name: "PB5 押しボタン", exact: true })
+    .click();
+  await expect(page.getByLabel("DPL 数値表示", { exact: true })).toHaveText(
+    "99",
+  );
+  await expect(
+    page.getByRole("status", { name: "RY1 リレー", exact: true }),
+  ).toContainText("OFF");
+  await expect(status).toContainText("異常保持");
+  await page
+    .getByRole("button", { name: "SS0 切替スイッチ", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "PB4 押しボタン", exact: true })
+    .click();
+  await expect(status).toContainText("SS0が手動");
+  await expect(page.getByLabel("DPL 数値表示", { exact: true })).toHaveText(
+    "02",
+  );
+});

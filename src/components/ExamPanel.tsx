@@ -10,7 +10,9 @@ import {
   type ExamWiring,
   type PushButton,
 } from "../core/plant/exam";
+import { AutoRunHelp } from "./AutoRunHelp";
 interface Props {
+  demoKind?: "grade2" | "basic" | null;
   plant: ExamPlant;
   wiring: ExamWiring;
   memory: Memory;
@@ -90,6 +92,7 @@ function Momentary({
   );
 }
 export function ExamPanel({
+  demoKind = null,
   plant,
   wiring,
   memory,
@@ -209,6 +212,14 @@ export function ExamPanel({
           {running ? "■ 試験運転停止" : "▶ 試験運転開始"}
         </button>
       </div>
+      <AutoRunHelp
+        kind={demoKind}
+        plant={plant}
+        memory={memory}
+        wiring={wiring}
+        running={running}
+        blocked={blocked}
+      />
       <p className="exam-reference">
         2019年2級器具配置図・FA-T-P01公開資料に基づく2Dモデル
       </p>

@@ -36,6 +36,7 @@ export function App() {
     [extra, setExtra] = useState<string[]>([]),
     [newDevice, setNewDevice] = useState("M0");
   const [showGrade2Guide, setShowGrade2Guide] = useState(false);
+  const [activeDemo, setActiveDemo] = useState<string | null>("exam_conveyor");
   const [lastTrace, setLastTrace] = useState<ScanTrace[]>([]);
   const [boardMode, setBoardMode] = useState<"exam" | "generic">("exam");
   const [wiring, setWiring] = useState<ExamWiring>(defaultWiring);
@@ -61,27 +62,32 @@ export function App() {
     (s: string) => setLogs((l) => [s, ...l].slice(0, 100)),
     [],
   );
-  const scan = useCallback(() => {
-    const previousPosition = plant.current.position,
-      previousInputs = { ...plc.current.inputs };
-    try {
-      if (boardMode === "exam") {
-        plant.current.advance(plc.current.memory, wiring, 100);
-        plc.current.inputs = plant.current.inputImage(wiring);
+  const scan = useCallback(
+    (elapsedMs = 100) => {
+      const previousPosition = plant.current.position,
+        previousInputs = { ...plc.current.inputs };
+      try {
+        if (boardMode === "exam") {
+          plant.current.advance(plc.current.memory, wiring, elapsedMs);
+          plc.current.inputs = plant.current.inputImage(wiring);
+        }
+        const trace = plc.current.scan(program, elapsedMs);
+        setLastTrace(trace);
+        refresh((n) => n + 1);
+        log(
+          `${elapsedMs === 0 ? "入力変化・" : ""}スキャン ${plc.current.scans} 完了 · ${trace.length}命令`,
+        );
+        return true;
+      } catch (e) {
+        plant.current.position = previousPosition;
+        plc.current.inputs = previousInputs;
+        setRunning(false);
+        log((e as Error).message);
+        return false;
       }
-      const trace = plc.current.scan(program, 100);
-      setLastTrace(trace);
-      refresh((n) => n + 1);
-      log(`スキャン ${plc.current.scans} 完了 · ${trace.length}命令`);
-      return true;
-    } catch (e) {
-      plant.current.position = previousPosition;
-      plc.current.inputs = previousInputs;
-      setRunning(false);
-      log((e as Error).message);
-      return false;
-    }
-  }, [program, log, boardMode, wiring]);
+    },
+    [program, log, boardMode, wiring],
+  );
   useEffect(() => {
     if (!running) return;
     const id = window.setInterval(scan, 100);
@@ -92,6 +98,7 @@ export function App() {
     setRunning(false);
     setProgram(parseText(text));
     setFilename(name);
+    setActiveDemo(name.replace(/\.csv$/, ""));
     if (name === "grade2_comprehensive.csv") {
       const nextWiring = defaultWiring();
       setBoardMode("exam");
@@ -122,6 +129,7 @@ export function App() {
       setProgram(p);
       setFilename(f.name);
       setShowGrade2Guide(false);
+      setActiveDemo(null);
       resetSimulation();
       refresh((n) => n + 1);
       setLogs([]);
@@ -285,7 +293,7 @@ export function App() {
           </div>
         </div>
         <section id="simulation" className="toolbar">
-          <button disabled={running || !!errors.length} onClick={scan}>
+          <button disabled={running || !!errors.length} onClick={() => scan()}>
             ▶ 1スキャン
           </button>
           <button
@@ -328,6 +336,13 @@ export function App() {
           />
           {boardMode === "exam" ? (
             <ExamPanel
+              demoKind={
+                showGrade2Guide
+                  ? "grade2"
+                  : activeDemo === "exam_conveyor"
+                    ? "basic"
+                    : null
+              }
               plant={plant.current}
               wiring={wiring}
               memory={plc.current.memory}
@@ -336,7 +351,8 @@ export function App() {
               onOperate={(operation) => {
                 operation(plant.current);
                 plc.current.inputs = plant.current.inputImage(wiring);
-                refresh((n) => n + 1);
+                if (running) scan(0);
+                else refresh((n) => n + 1);
               }}
               onWiring={(value) => {
                 setRunning(false);

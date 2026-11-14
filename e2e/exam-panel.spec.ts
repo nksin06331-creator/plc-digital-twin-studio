@@ -75,7 +75,6 @@ test("automatic cycle returns to the right end and NC emergency stops motion", a
     .getByRole("button", { name: "PB1 押しボタン", exact: true })
     .focus();
   await page.keyboard.down("Space");
-  await page.clock.runFor(100);
   await expect(
     page.getByRole("status", { name: "RY1 リレー", exact: true }),
   ).toContainText("ON");
