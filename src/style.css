@@ -927,3 +927,677 @@ td:last-child {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+/* Grade 2 exam panel: independently drawn from cited public equipment layouts. */
+.live-workbench {
+  grid-template-columns: minmax(0, 1fr) minmax(480px, 600px);
+}
+.live-workbench > .exam-panel {
+  max-height: none;
+  overflow: visible;
+}
+.exam-panel .panel-title {
+  align-items: flex-start;
+  gap: 12px;
+}
+.exam-panel .panel-title h2 {
+  font-size: 16px;
+}
+.exam-panel .run-button {
+  font-size: 11px;
+}
+.exam-reference {
+  font-size: 10px;
+  color: #94aeca;
+}
+.exam-stage-scroll {
+  overflow-x: auto;
+  border-radius: 8px;
+}
+.exam-stage {
+  position: relative;
+  min-width: 540px;
+  padding: 25px 20px 10px;
+  background: linear-gradient(130deg, #d7dbd5, #f0f0e8 35%, #c7cdc5);
+  color: #222b2c;
+  border: 2px solid #8e9893;
+  border-radius: 5px;
+  box-shadow: inset 0 0 15px #55615a55;
+  font-family: "Segoe UI", sans-serif;
+}
+.mounting-screw {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border: 1px solid #68736e;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #abb4ad, #e5e8e2, #818e85);
+  box-shadow: 1px 1px 2px #68756b;
+}
+.mounting-screw:after {
+  content: "";
+  position: absolute;
+  width: 6px;
+  height: 1px;
+  background: #505a53;
+  top: 4px;
+  left: 1px;
+  transform: rotate(-30deg);
+}
+.screw-tl {
+  top: 8px;
+  left: 8px;
+}
+.screw-tr {
+  top: 8px;
+  right: 8px;
+}
+.screw-bl {
+  bottom: 8px;
+  left: 8px;
+}
+.screw-br {
+  bottom: 8px;
+  right: 8px;
+}
+.exam-terminal {
+  margin: 0 18px 20px 35px;
+}
+.exam-terminal > span {
+  font-size: 10px;
+  display: block;
+  margin-bottom: 4px;
+  letter-spacing: 1px;
+}
+.terminal-cells {
+  display: flex;
+  background: #262d2c;
+  border: 3px solid #2e3332;
+  padding: 2px;
+  box-shadow: 0 4px 0 #828c84;
+}
+.terminal-cell {
+  flex: 1;
+  min-width: 0;
+  border-right: 1px solid #171d1a;
+  display: grid;
+  gap: 3px;
+}
+.terminal-cell b {
+  font:
+    8px ui-monospace,
+    monospace;
+  text-align: center;
+  background: #e6e8df;
+  color: #29322a;
+  padding: 4px 0;
+  border-top: 2px solid #a6b1a5;
+}
+.terminal-cell .terminal-active {
+  background: #82ddae;
+}
+.exam-upper {
+  display: grid;
+  grid-template-columns: 100px 1fr 75px;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 15px;
+}
+.exam-breaker {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+.exam-breaker button {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  width: 55px;
+  background: #3e4541;
+  border: 2px solid #7d8881;
+  border-radius: 1px;
+  padding: 5px 14px;
+  color: #d9e3da;
+}
+.exam-breaker button b {
+  height: 25px;
+  width: 19px;
+  border: 1px solid #121a15;
+  background: linear-gradient(#19231c, #515e53);
+  transform: rotateX(180deg);
+}
+.exam-breaker button .breaker-on {
+  background: linear-gradient(#54735b, #1a2a20);
+  transform: none;
+}
+.exam-breaker small {
+  font-size: 8px;
+}
+.exam-relays {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+.exam-relays > div {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  font-size: 10px;
+}
+.relay-case {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  width: 52px;
+  height: 65px;
+  border: 3px solid #7d8c85;
+  border-radius: 2px;
+  background: linear-gradient(110deg, #c9cbb9aa, #e7f5f077, #737e6e99);
+  box-shadow: 0 3px 0 #444e45;
+  color: #425046;
+  padding: 9px 3px;
+}
+.relay-coil {
+  width: 24px;
+  height: 17px;
+  background: repeating-linear-gradient(
+    0deg,
+    #957a46 0px,
+    #957a46 1px,
+    #59452a 2px,
+    #59452a 3px
+  );
+  border: 2px solid #89958c;
+}
+.relay-case i {
+  position: absolute;
+  width: 23px;
+  height: 3px;
+  top: 30px;
+  background: #b2b8ae;
+  transform: rotate(-18deg);
+}
+.relay-case.energized {
+  background: #b5f6cb;
+  border-color: #468e62;
+  box-shadow: 0 0 7px #499b5a88;
+}
+.relay-case.energized i {
+  transform: rotate(0);
+}
+.relay-case small {
+  font-size: 9px;
+}
+.exam-outlet {
+  text-align: center;
+  font-size: 9px;
+  color: #616c63;
+}
+.exam-outlet > div {
+  border: 2px solid #adb5a9;
+  background: #e2e4d9;
+  border-radius: 5px;
+  font-size: 20px;
+  margin: 6px 0;
+  padding: 5px;
+  line-height: 0.8;
+  color: #616e62;
+}
+.exam-outlet small {
+  font-size: 8px;
+}
+.exam-conveyor-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 9px;
+  margin: 8px 15px;
+  color: #455348;
+}
+.exam-conveyor {
+  height: 155px;
+  position: relative;
+  border: 2px solid #919a91;
+  margin: 0 15px;
+  background: #7d8980;
+  box-shadow: 0 3px 5px #49584d55;
+  overflow: hidden;
+}
+.conveyor-belt {
+  position: absolute;
+  inset: 12px 15px;
+  background: repeating-linear-gradient(
+    90deg,
+    #24594f 0px,
+    #24594f 19px,
+    #286254 20px,
+    #286254 23px
+  );
+  border: 2px solid #344a3d;
+}
+.moving .conveyor-belt {
+  animation: belt-travel 0.6s linear infinite;
+}
+.moving.to-left .conveyor-belt {
+  animation-direction: reverse;
+}
+.conveyor-rail {
+  position: absolute;
+  z-index: 3;
+  left: 0;
+  right: 0;
+  height: 10px;
+  background: linear-gradient(#f4f4ed, #84918a, #d7dfd8);
+  border: 1px solid #7b867d;
+}
+.rail-top {
+  top: 1px;
+}
+.rail-bottom {
+  bottom: 1px;
+}
+.conveyor-roller {
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  width: 18px;
+  background: linear-gradient(90deg, #5d6a60, #c7d0c6, #526056);
+  border-radius: 7px;
+  z-index: 1;
+}
+.roller-left {
+  left: 10px;
+}
+.roller-right {
+  right: 10px;
+}
+.work-pallet {
+  position: absolute;
+  z-index: 2;
+  top: 19px;
+  width: 42px;
+  height: 115px;
+  transform: translateX(-50%);
+  background: linear-gradient(100deg, #b0b6b3, #f6f4ed, #a5aea8);
+  border: 1px solid #7d8980;
+  box-shadow: 2px 3px 4px #1c342a99;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: left 100ms linear;
+}
+.work-pallet small {
+  font: 8px monospace;
+  color: #35483c;
+}
+.bolt {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px dashed #89968a;
+  background: #8b968c33;
+}
+.bolt.fitted {
+  border: 1px solid #737e73;
+  background: linear-gradient(45deg, #9fa99e, #f3f4eb, #7c897c);
+  box-shadow: 1px 1px 1px #4a5d50;
+}
+.bolt.fitted:after {
+  content: "+";
+  display: block;
+  text-align: center;
+  line-height: 10px;
+  font-size: 11px;
+  color: #586459;
+}
+.left-sensors {
+  position: absolute;
+  z-index: 4;
+  top: 20px;
+  left: 18px;
+  display: grid;
+  gap: 3px;
+}
+.limit-sensor {
+  border: 1px solid #4a5850;
+  background: #e8e8dc;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  font: 8px monospace;
+  box-shadow: 1px 1px 0 #485a4a;
+}
+.limit-sensor i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #737f75;
+}
+.limit-sensor.detected {
+  border-color: #38845c;
+  background: #cdf4d8;
+}
+.limit-sensor.detected i {
+  background: #28a65c;
+  box-shadow: 0 0 4px #35b770;
+}
+.right-sensor {
+  position: absolute;
+  bottom: 19px;
+  right: 16px;
+  z-index: 4;
+}
+.conveyor-left-label,
+.conveyor-right-label {
+  position: absolute;
+  bottom: 11px;
+  font-size: 8px;
+  color: #d6e3d9;
+  z-index: 4;
+}
+.conveyor-left-label {
+  left: 92px;
+}
+.conveyor-right-label {
+  right: 90px;
+}
+.exam-lamps {
+  display: flex;
+  gap: 23px;
+  padding: 17px 20px 10px;
+  align-items: start;
+}
+.exam-lamps > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+}
+.exam-lamps > div:first-child {
+  margin-right: 16px;
+}
+.pilot-lamp {
+  width: 25px;
+  height: 25px;
+  border: 3px solid #87938b;
+  border-radius: 50%;
+  background: radial-gradient(#e4e7df, #c2c9bf);
+  box-shadow: 0 2px 1px #56675a55;
+}
+.pilot-lamp.illuminated {
+  background: radial-gradient(#f5fff6, #6fdf92);
+  box-shadow: 0 0 12px #69bc70;
+  border-color: #6c9e7c;
+}
+.power-lamp.illuminated {
+  background: radial-gradient(#ecffe2, #a3df72);
+}
+.exam-lamps small {
+  font: 8px monospace;
+  color: #627365;
+}
+.exam-operators {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr)) repeat(5, minmax(0, 0.9fr))
+    0.7fr 1.6fr;
+  gap: 6px;
+  padding: 6px 0 8px;
+  align-items: start;
+}
+.exam-control {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+.exam-control > span,
+.exam-display > span {
+  font-size: 8px;
+  white-space: nowrap;
+}
+.exam-control strong {
+  font-size: 9px;
+}
+.exam-control small {
+  font-size: 9px;
+  color: #4a6050;
+}
+.exam-selector {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 3px solid #8b968e;
+  border-radius: 2px;
+  background: linear-gradient(135deg, #293b31, #596a5d);
+  padding: 0;
+}
+.exam-selector i {
+  width: 9px;
+  height: 30px;
+  background: linear-gradient(90deg, #8f9f95, #d8ded5, #7c8b80);
+  border: 1px solid #1b3024;
+  border-radius: 2px;
+  transform: rotate(-37deg);
+  box-shadow: 1px 2px 2px #0009;
+}
+.exam-selector.engaged i {
+  transform: rotate(37deg);
+}
+.exam-push {
+  width: 35px;
+  height: 35px;
+  border: 3px solid #8e9a91;
+  border-radius: 2px;
+  box-shadow: 0 3px 0 #526356;
+  background: linear-gradient(#fffef4, #cbd0c6);
+  padding: 0;
+  touch-action: none;
+}
+.exam-push:hover {
+  background: linear-gradient(#fff, #e6ecdf);
+}
+.exam-push.pressed {
+  transform: translateY(3px);
+  box-shadow: 0 0 0 #526356;
+  background: #a6b9aa;
+}
+.exam-push.emergency {
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f16b59, #a9231c);
+  border-color: #aeada0;
+}
+.exam-push.emergency.pressed {
+  background: #841e17;
+}
+.dsw-control select {
+  font: 18px monospace;
+  width: 32px;
+  padding: 2px;
+  background: #222a25;
+  color: #e8f2d9;
+  border: 3px solid #98a393;
+  margin: 0;
+  height: 35px;
+}
+.exam-display {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 5px;
+}
+.exam-display output {
+  font:
+    31px ui-monospace,
+    monospace;
+  letter-spacing: 2px;
+  line-height: 1;
+  padding: 3px;
+  background: #171f1b;
+  border: 3px solid #79877d;
+  border-radius: 2px;
+  color: #ef644d;
+  text-shadow: 0 0 4px #ff665544;
+  white-space: pre;
+  min-width: 58px;
+  text-align: center;
+}
+.exam-display small {
+  font-size: 8px;
+  color: #657367;
+}
+.exam-nameplate {
+  font: 8px monospace;
+  letter-spacing: 0.6px;
+  color: #66766b;
+  margin: 10px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid #aab3a8;
+}
+.exam-nameplate span {
+  float: right;
+  font-size: 7px;
+}
+.exam-fixture {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 15px 0;
+  font-size: 10px;
+  align-items: center;
+}
+.exam-fixture label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.exam-fixture select {
+  width: 70px;
+  font-size: 11px;
+  margin: 0;
+  padding: 4px;
+}
+.exam-fixture button {
+  font-size: 10px;
+  padding: 5px;
+  margin: 2px;
+}
+.exam-fixture span {
+  color: #91aac8;
+}
+.exam-wiring,
+.exam-sources {
+  font-size: 11px;
+  border-top: 1px solid #2c4059;
+  padding: 12px 0 0;
+  margin-top: 12px;
+}
+.exam-wiring summary,
+.exam-sources summary {
+  cursor: pointer;
+  color: #a6bdd7;
+}
+.wiring-tables {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.wiring-tables table {
+  font-size: 10px;
+}
+.wiring-tables td,
+.wiring-tables th {
+  padding: 6px 3px;
+}
+.wiring-tables td:last-child {
+  min-width: 0;
+}
+.wiring-tables input {
+  width: 65px;
+  padding: 4px;
+  font: 10px monospace;
+}
+.wiring-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.wiring-actions button,
+.wiring-actions .file {
+  font-size: 10px;
+}
+.wiring-message {
+  white-space: pre-wrap;
+  color: #dec88b;
+}
+.exam-sources a {
+  color: #83c6ec;
+}
+.panel-mode {
+  display: block;
+  margin-top: 20px;
+  font-size: 12px;
+}
+.exam-panel .caption {
+  margin-top: 0;
+}
+@keyframes belt-travel {
+  to {
+    background-position: 23px 0;
+  }
+}
+@media (max-width: 1250px) {
+  .live-workbench {
+    grid-template-columns: 1fr;
+  }
+  .live-workbench > .exam-panel {
+    max-height: none;
+  }
+  .exam-stage {
+    max-width: 700px;
+    margin: 0 auto;
+  }
+}
+@media (max-width: 700px) {
+  .exam-panel {
+    padding: 10px;
+  }
+  .exam-panel .panel-title {
+    flex-direction: column;
+  }
+  .exam-stage-scroll {
+    margin: 0 -2px;
+  }
+  .wiring-tables {
+    grid-template-columns: 1fr;
+  }
+  .exam-stage {
+    min-width: 540px;
+  }
+  .exam-fixture {
+    gap: 7px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .work-pallet {
+    transition: none;
+  }
+  .moving .conveyor-belt {
+    animation: none;
+  }
+}
+.dsw-control select {
+  appearance: none;
+  text-align: center;
+  text-align-last: center;
+  padding: 2px;
+  font-size: 22px;
+  cursor: pointer;
+}
