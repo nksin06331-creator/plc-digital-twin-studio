@@ -1601,3 +1601,36 @@ td:last-child {
   font-size: 22px;
   cursor: pointer;
 }
+
+.work-pallet {
+  gap: 3px;
+}
+.pallet-bolt {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.pallet-bolt:hover {
+  background: #4f725e33;
+}
+.pallet-bolt:focus-visible {
+  outline: 2px solid #13664b;
+  outline-offset: 0;
+}
+.pallet-bolt .bolt {
+  display: block;
+  pointer-events: none;
+}
+.pallet-help {
+  font-size: 10px;
+  color: #9bb1c9;
+  margin: 12px 0 0;
+}

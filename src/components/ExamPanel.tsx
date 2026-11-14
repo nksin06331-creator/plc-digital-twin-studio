@@ -347,12 +347,25 @@ export function ExamPanel({
             >
               <small>NO.{plant.palletCode}</small>
               {[2, 1, 0].map((bit) => (
-                <span
+                <button
                   key={bit}
-                  className={
-                    plant.palletCode & (1 << bit) ? "bolt fitted" : "bolt"
+                  type="button"
+                  className="pallet-bolt"
+                  aria-label={`ネジ LS${bit + 3}（重み${1 << bit}）`}
+                  aria-pressed={!!(plant.palletCode & (1 << bit))}
+                  title={`LS${bit + 3} / 重み${1 << bit}: ${plant.palletCode & (1 << bit) ? "取り付け済み（クリックで外す）" : "取り外し済み（クリックで付ける）"}`}
+                  onClick={() =>
+                    onOperate((p) => {
+                      p.palletCode ^= 1 << bit;
+                    })
                   }
-                />
+                >
+                  <span
+                    className={
+                      plant.palletCode & (1 << bit) ? "bolt fitted" : "bolt"
+                    }
+                  />
+                </button>
               ))}
             </div>
             <div className="left-sensors">
@@ -491,6 +504,9 @@ export function ExamPanel({
           RY1・RY2同時指令：相互インターロックとして搬送を停止しています。
         </p>
       )}
+      <p className="pallet-help">
+        パレット上のネジをクリックすると脱着できます。上から重み4・2・1で、番号と左端のLS5・LS4・LS3に連動します。
+      </p>
       <div className="exam-fixture">
         <label>
           パレット番号

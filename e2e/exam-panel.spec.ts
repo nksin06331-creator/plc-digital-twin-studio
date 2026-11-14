@@ -194,3 +194,63 @@ test("interlocked relay commands warn and do not move the pallet", async ({
     "1.0000",
   );
 });
+
+test("pallet bolts toggle individually, synchronize the selector and drive left-end detection", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const upper = page.getByRole("button", {
+    name: "ネジ LS5（重み4）",
+    exact: true,
+  });
+  const middle = page.getByRole("button", {
+    name: "ネジ LS4（重み2）",
+    exact: true,
+  });
+  const lower = page.getByRole("button", {
+    name: "ネジ LS3（重み1）",
+    exact: true,
+  });
+  const number = page.getByRole("combobox", {
+    name: "パレット番号",
+    exact: true,
+  });
+  await expect(upper).toHaveAttribute("aria-pressed", "true");
+  await upper.click();
+  await expect(number).toHaveValue("3");
+  await expect(upper).toHaveAttribute("aria-pressed", "false");
+  await middle.focus();
+  await page.keyboard.press("Space");
+  await expect(number).toHaveValue("1");
+  await lower.focus();
+  await page.keyboard.press("Enter");
+  await expect(number).toHaveValue("0");
+  await page.getByRole("button", { name: "左端", exact: true }).click();
+  for (const name of ["LS3", "LS4", "LS5"])
+    await expect(
+      page.getByRole("status", { name: name + " センサー", exact: true }),
+    ).toContainText("OFF");
+  await upper.click();
+  await lower.click();
+  await expect(number).toHaveValue("5");
+  await expect(
+    page.getByRole("status", { name: "LS5 センサー", exact: true }),
+  ).toContainText("ON");
+  await expect(
+    page.getByRole("status", { name: "LS3 センサー", exact: true }),
+  ).toContainText("ON");
+  await expect(
+    page.getByRole("status", { name: "LS4 センサー", exact: true }),
+  ).toContainText("OFF");
+  await number.selectOption("2");
+  await expect(upper).toHaveAttribute("aria-pressed", "false");
+  await expect(middle).toHaveAttribute("aria-pressed", "true");
+  await expect(lower).toHaveAttribute("aria-pressed", "false");
+  await expect(
+    page.getByRole("status", { name: "LS4 センサー", exact: true }),
+  ).toContainText("ON");
+  await page.getByRole("button", { name: "中央", exact: true }).click();
+  await expect(
+    page.getByRole("status", { name: "LS4 センサー", exact: true }),
+  ).toContainText("OFF");
+});
