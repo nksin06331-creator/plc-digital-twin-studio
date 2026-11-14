@@ -75,12 +75,10 @@ export function validateWiring(value: unknown): string[] {
   }
   return errors;
 }
-export function parseWiring(text: string): ExamWiring {
-  if (text.length > 16384) throw Error("割付ファイルは16 KiBまでです");
-  const v: unknown = JSON.parse(text);
-  const errors = validateWiring(v);
+export function normalizeWiring(value: unknown): ExamWiring {
+  const errors = validateWiring(value);
   if (errors.length) throw Error(errors.join("\n"));
-  const w = v as ExamWiring;
+  const w = value as ExamWiring;
   return {
     inputs: Object.fromEntries(
       inputPoints.map(([k]) => [k, device(w.inputs[k])!.name]),
@@ -89,6 +87,10 @@ export function parseWiring(text: string): ExamWiring {
       outputPoints.map(([k]) => [k, device(w.outputs[k])!.name]),
     ) as ExamWiring["outputs"],
   };
+}
+export function parseWiring(text: string): ExamWiring {
+  if (text.length > 16384) throw Error("割付ファイルは16 KiBまでです");
+  return normalizeWiring(JSON.parse(text));
 }
 export class ExamPlant {
   power = true;

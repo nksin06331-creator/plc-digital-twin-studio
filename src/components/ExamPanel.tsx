@@ -5,7 +5,7 @@ import {
   inputPoints,
   outputPoints,
   parseWiring,
-  validateWiring,
+  normalizeWiring,
   defaultWiring,
   type ExamWiring,
   type PushButton,
@@ -178,14 +178,14 @@ export function ExamPanel({
         ? "右行"
         : "停止";
   function apply(value: ExamWiring) {
-    const errors = validateWiring(value);
-    if (errors.length) {
-      setMessage(errors.join("\n"));
-      return;
+    try {
+      const normalized = normalizeWiring(value);
+      onWiring(normalized);
+      setDraft(structuredClone(normalized));
+      setMessage("割付を適用し、PLCメモリと盤を初期化しました");
+    } catch (error) {
+      setMessage((error as Error).message);
     }
-    onWiring(value);
-    setDraft(structuredClone(value));
-    setMessage("割付を適用し、PLCメモリと盤を初期化しました");
   }
   function download() {
     const url = URL.createObjectURL(

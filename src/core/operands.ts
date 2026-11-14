@@ -12,7 +12,7 @@ export function group(s: string) {
   if (!m) return null;
   const start = device(m[2]);
   const count = Number(m[1]) * 4;
-  return start && Number.isSafeInteger(start.address + count - 1)
+  return start && Number.isSafeInteger(start.address + (count - 1))
     ? { start, count }
     : null;
 }

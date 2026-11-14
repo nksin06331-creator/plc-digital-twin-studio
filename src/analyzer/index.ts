@@ -1,4 +1,9 @@
-import { device, type Instruction, type Program } from "../core/model";
+import {
+  device,
+  type Instruction,
+  type Program,
+  type Diagnostic,
+} from "../core/model";
 import { group, offset, comparison } from "../core/operands";
 export interface Reference {
   step: number;
@@ -15,7 +20,8 @@ export interface RangeAccess {
 export function analyze(p: Program) {
   const devices = new Map<string, Reference[]>(),
     counts = new Map<string, number>(),
-    ranges: RangeAccess[] = [];
+    ranges: RangeAccess[] = [],
+    diagnostics: Diagnostic[] = [];
   for (const i of p.instructions) {
     counts.set(i.opcode, (counts.get(i.opcode) ?? 0) + 1);
     i.operands.forEach((s, index) => {
@@ -48,17 +54,26 @@ export function analyze(p: Program) {
       const count = g?.count ?? (i.opcode === "*" && index === 2 ? 2 : 1);
       if (g || count > 1)
         ranges.push({ instruction: i, start: d.name, count, access });
-      for (let n = 0; n < count; n++) {
+      const validEnd = Number.isSafeInteger(d.address + (count - 1));
+      if (!validEnd)
+        diagnostics.push({
+          severity: "error",
+          sourceLine: i.sourceLine,
+          message: `ステップ ${i.step}: ${d.name}からの連続アクセス終端番地が不正です`,
+        });
+      for (let n = 0; n < (validEnd ? count : 1); n++) {
         const name = offset(d.name, n);
-        devices.set(name, [
-          ...(devices.get(name) ?? []),
-          {
-            step: i.step,
-            sourceLine: i.operandSourceLines?.[index] ?? i.sourceLine,
-            access,
-            opcode: i.opcode,
-          },
-        ]);
+        let refs = devices.get(name);
+        if (!refs) {
+          refs = [];
+          devices.set(name, refs);
+        }
+        refs.push({
+          step: i.step,
+          sourceLine: i.operandSourceLines?.[index] ?? i.sourceLine,
+          access,
+          opcode: i.opcode,
+        });
       }
     });
   }
@@ -67,7 +82,7 @@ export function analyze(p: Program) {
       ([, refs]) => refs.filter((r) => r.access.includes("write")).length > 1,
     )
     .map(([d]) => `${d}: 複数書込み（参考警告。命令順を確認）`);
-  return { devices, counts, ranges, warnings };
+  return { devices, counts, ranges, warnings, diagnostics };
 }
 const csvCell = (s: string) =>
   '"' + (/^[=+\-@\t\r]/.test(s) ? "'" + s : s).replaceAll('"', '""') + '"';

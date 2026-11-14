@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { PagedList } from "./PagedList";
 import type { Memory } from "../core/engine";
 import { group, offset } from "../core/operands";
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
   running: boolean;
   blocked: boolean;
   onInput: (name: string, value: number) => void;
+  onInputs: (values: Record<string, number>) => void;
   onRun: () => void;
   onStop: () => void;
 }
@@ -90,6 +92,7 @@ export function TrainingPanel({
   running,
   blocked,
   onInput,
+  onInputs,
   onRun,
   onStop,
 }: Props) {
@@ -114,6 +117,30 @@ export function TrainingPanel({
   if (displayValid)
     for (let i = 0; i < 8; i++)
       if (memory[offset(bcdOutput, i)]) digits |= 1 << i;
+  const filteredInputs = useMemo(
+    () =>
+      inputs.filter(
+        (name) =>
+          configuring ||
+          !bcdValid ||
+          !Array.from({ length: 4 }, (_, i) => offset(bcdInput, i)).includes(
+            name,
+          ),
+      ),
+    [inputs, configuring, bcdValid, bcdInput],
+  );
+  const filteredOutputs = useMemo(
+    () =>
+      outputs.filter(
+        (name) =>
+          configuring ||
+          !displayValid ||
+          !Array.from({ length: 8 }, (_, i) => offset(bcdOutput, i)).includes(
+            name,
+          ),
+      ),
+    [outputs, configuring, displayValid, bcdOutput],
+  );
   const digitText =
     (digits & 15) > 9 || ((digits >> 4) & 15) > 9
       ? "--"
@@ -151,159 +178,153 @@ export function TrainingPanel({
           <h3>
             操作スイッチ <span>INPUT</span>
           </h3>
-          <div className="switch-grid">
-            {inputs
-              .filter(
-                (name) =>
-                  configuring ||
-                  !bcdValid ||
-                  !Array.from({ length: 4 }, (_, i) =>
-                    offset(bcdInput, i),
-                  ).includes(name),
-              )
-              .map((name) => {
-                const mode =
-                    modes[name] ??
-                    (defaultForward && ["X0", "X1"].includes(name)
-                      ? "no"
-                      : "toggle"),
-                  value = !!inputImage[name];
-                return (
-                  <div className="panel-device" key={name}>
-                    <code>{name}</code>
-                    <input
-                      className="device-label"
-                      aria-label={name + " 機器名"}
-                      value={
-                        labels[name] ??
-                        (defaultForward
-                          ? ((
-                              {
-                                X0: "始動",
-                                X1: "停止",
-                                X2: "正逆切替",
-                                Y0: "運転灯",
-                                Y1: "正転出力",
-                                Y2: "逆転出力",
-                              } as Record<string, string>
-                            )[name] ?? "")
-                          : "")
-                      }
-                      placeholder="機器名を設定"
-                      onChange={(e) =>
-                        setLabels((l) => ({ ...l, [name]: e.target.value }))
-                      }
-                    />
-                    {mode === "toggle" ? (
-                      <button
-                        className={"selector-switch " + (value ? "lit" : "")}
-                        aria-label={name + " 切替スイッチ"}
-                        aria-pressed={value}
-                        onClick={() => onInput(name, value ? 0 : 1)}
-                      >
-                        <span className="switch-lever" />
-                        {value ? "ON" : "OFF"}
-                      </button>
-                    ) : (
-                      <PushButton
-                        name={name}
-                        value={value}
-                        onInput={onInput}
-                        nc={mode === "nc"}
+          <PagedList items={filteredInputs} label="盤入力" pageSize={12}>
+            {(visibleInputs) => (
+              <div className="switch-grid">
+                {visibleInputs.map((name) => {
+                  const mode =
+                      modes[name] ??
+                      (defaultForward && ["X0", "X1"].includes(name)
+                        ? "no"
+                        : "toggle"),
+                    value = !!inputImage[name];
+                  return (
+                    <div className="panel-device" key={name}>
+                      <code>{name}</code>
+                      <input
+                        className="device-label"
+                        aria-label={name + " 機器名"}
+                        value={
+                          labels[name] ??
+                          (defaultForward
+                            ? ((
+                                {
+                                  X0: "始動",
+                                  X1: "停止",
+                                  X2: "正逆切替",
+                                  Y0: "運転灯",
+                                  Y1: "正転出力",
+                                  Y2: "逆転出力",
+                                } as Record<string, string>
+                              )[name] ?? "")
+                            : "")
+                        }
+                        placeholder="機器名を設定"
+                        onChange={(e) =>
+                          setLabels((l) => ({ ...l, [name]: e.target.value }))
+                        }
                       />
-                    )}
-                    <small>入力接点 {value ? "ON" : "OFF"}</small>
-                    <select
-                      aria-label={name + " 接点種別"}
-                      value={mode}
-                      onChange={(e) => {
-                        setModes((m) => ({ ...m, [name]: e.target.value }));
-                        onInput(name, e.target.value === "nc" ? 1 : 0);
-                      }}
-                    >
-                      <option value="toggle">保持スイッチ</option>
-                      <option value="no">押しボタン a接点</option>
-                      <option value="nc">押しボタン b接点</option>
-                    </select>
-                  </div>
-                );
-              })}
-          </div>
+                      {mode === "toggle" ? (
+                        <button
+                          className={"selector-switch " + (value ? "lit" : "")}
+                          aria-label={name + " 切替スイッチ"}
+                          aria-pressed={value}
+                          onClick={() => onInput(name, value ? 0 : 1)}
+                        >
+                          <span className="switch-lever" />
+                          {value ? "ON" : "OFF"}
+                        </button>
+                      ) : (
+                        <PushButton
+                          name={name}
+                          value={value}
+                          onInput={onInput}
+                          nc={mode === "nc"}
+                        />
+                      )}
+                      <small>入力接点 {value ? "ON" : "OFF"}</small>
+                      <select
+                        aria-label={name + " 接点種別"}
+                        value={mode}
+                        onChange={(e) => {
+                          setModes((m) => ({ ...m, [name]: e.target.value }));
+                          onInput(name, e.target.value === "nc" ? 1 : 0);
+                        }}
+                      >
+                        <option value="toggle">保持スイッチ</option>
+                        <option value="no">押しボタン a接点</option>
+                        <option value="nc">押しボタン b接点</option>
+                      </select>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </PagedList>
         </div>
         <div className="board-section">
           <h3>
             表示灯・負荷 <span>OUTPUT</span>
           </h3>
-          <div className="lamp-grid">
-            {outputs
-              .filter(
-                (name) =>
-                  configuring ||
-                  !displayValid ||
-                  !Array.from({ length: 8 }, (_, i) =>
-                    offset(bcdOutput, i),
-                  ).includes(name),
-              )
-              .map((name) => {
-                const active = !!memory[name],
-                  type = types[name] ?? "green";
-                return (
-                  <div className="panel-device" key={name}>
-                    <code>{name}</code>
-                    <input
-                      className="device-label"
-                      aria-label={name + " 機器名"}
-                      value={
-                        labels[name] ??
-                        (defaultForward
-                          ? ((
-                              {
-                                X0: "始動",
-                                X1: "停止",
-                                X2: "正逆切替",
-                                Y0: "運転灯",
-                                Y1: "正転出力",
-                                Y2: "逆転出力",
-                              } as Record<string, string>
-                            )[name] ?? "")
-                          : "")
-                      }
-                      placeholder="機器名を設定"
-                      onChange={(e) =>
-                        setLabels((l) => ({ ...l, [name]: e.target.value }))
-                      }
-                    />
-                    <div
-                      role="status"
-                      aria-label={name + " 出力"}
-                      className={
-                        "panel-lamp " + type + (active ? " illuminated" : "")
-                      }
-                    >
-                      <span>
-                        {type === "buzzer" ? "♪" : type === "relay" ? "RY" : ""}
-                      </span>
+          <PagedList items={filteredOutputs} label="盤出力" pageSize={12}>
+            {(visibleOutputs) => (
+              <div className="lamp-grid">
+                {visibleOutputs.map((name) => {
+                  const active = !!memory[name],
+                    type = types[name] ?? "green";
+                  return (
+                    <div className="panel-device" key={name}>
+                      <code>{name}</code>
+                      <input
+                        className="device-label"
+                        aria-label={name + " 機器名"}
+                        value={
+                          labels[name] ??
+                          (defaultForward
+                            ? ((
+                                {
+                                  X0: "始動",
+                                  X1: "停止",
+                                  X2: "正逆切替",
+                                  Y0: "運転灯",
+                                  Y1: "正転出力",
+                                  Y2: "逆転出力",
+                                } as Record<string, string>
+                              )[name] ?? "")
+                            : "")
+                        }
+                        placeholder="機器名を設定"
+                        onChange={(e) =>
+                          setLabels((l) => ({ ...l, [name]: e.target.value }))
+                        }
+                      />
+                      <div
+                        role="status"
+                        aria-label={name + " 出力"}
+                        className={
+                          "panel-lamp " + type + (active ? " illuminated" : "")
+                        }
+                      >
+                        <span>
+                          {type === "buzzer"
+                            ? "♪"
+                            : type === "relay"
+                              ? "RY"
+                              : ""}
+                        </span>
+                      </div>
+                      <strong className={active ? "on" : ""}>
+                        {active ? "ON" : "OFF"}
+                      </strong>
+                      <select
+                        aria-label={name + " 機器種類"}
+                        value={type}
+                        onChange={(e) =>
+                          setTypes((t) => ({ ...t, [name]: e.target.value }))
+                        }
+                      >
+                        <option value="green">緑ランプ</option>
+                        <option value="red">赤ランプ</option>
+                        <option value="amber">黄ランプ</option>
+                        <option value="relay">リレー表示</option>
+                        <option value="buzzer">ブザー表示（無音）</option>
+                      </select>
                     </div>
-                    <strong className={active ? "on" : ""}>
-                      {active ? "ON" : "OFF"}
-                    </strong>
-                    <select
-                      aria-label={name + " 機器種類"}
-                      value={type}
-                      onChange={(e) =>
-                        setTypes((t) => ({ ...t, [name]: e.target.value }))
-                      }
-                    >
-                      <option value="green">緑ランプ</option>
-                      <option value="red">赤ランプ</option>
-                      <option value="amber">黄ランプ</option>
-                      <option value="relay">リレー表示</option>
-                      <option value="buzzer">ブザー表示（無音）</option>
-                    </select>
-                  </div>
-                );
-              })}
-          </div>
+                  );
+                })}
+              </div>
+            )}
+          </PagedList>
         </div>
       </div>
       <div className="board-instruments">
@@ -378,8 +399,14 @@ export function TrainingPanel({
             value={dial}
             onChange={(e) => {
               const n = Number(e.target.value);
-              for (let i = 0; i < 4; i++)
-                onInput(offset(bcdInput, i), (n >> i) & 1);
+              onInputs(
+                Object.fromEntries(
+                  Array.from({ length: 4 }, (_, i) => [
+                    offset(bcdInput, i),
+                    (n >> i) & 1,
+                  ]),
+                ),
+              );
             }}
           >
             {Array.from({ length: 10 }, (_, n) => (

@@ -11,6 +11,7 @@ import { LadderView } from "./LadderView";
 import { TrainingPanel } from "./TrainingPanel";
 import { ExamPanel } from "./ExamPanel";
 import { ExamPlant, defaultWiring, type ExamWiring } from "../core/plant/exam";
+import { PagedList } from "./PagedList";
 import { Grade2Guide } from "./Grade2Guide";
 import grade2 from "../../samples/grade2_comprehensive.csv?raw";
 import exam from "../../samples/exam_conveyor.csv?raw";
@@ -36,6 +37,7 @@ export function App() {
     [extra, setExtra] = useState<string[]>([]),
     [newDevice, setNewDevice] = useState("M0");
   const [showGrade2Guide, setShowGrade2Guide] = useState(false);
+  const [analysisExpanded, setAnalysisExpanded] = useState(false);
   const [activeDemo, setActiveDemo] = useState<string | null>("exam_conveyor");
   const [lastTrace, setLastTrace] = useState<ScanTrace[]>([]);
   const [boardMode, setBoardMode] = useState<"exam" | "generic">("exam");
@@ -57,7 +59,26 @@ export function App() {
   }, [boardMode, wiring]);
   const loadVersion = useRef(0);
   const analysis = useMemo(() => analyze(program), [program]),
-    errors = useMemo(() => validate(program), [program]);
+    errors = useMemo(
+      () => [
+        ...new Set([
+          ...validate(program),
+          ...analysis.diagnostics
+            .filter((d) => d.severity === "error")
+            .map((d) => d.message),
+        ]),
+      ],
+      [program, analysis],
+    );
+  const deviceEntries = useMemo(() => [...analysis.devices], [analysis]);
+  const programWarnings = useMemo(
+    () => program.diagnostics.filter((d) => d.severity === "warning"),
+    [program],
+  );
+  const selectedIndex = useMemo(
+    () => program.instructions.findIndex((i) => i.step === selected),
+    [program, selected],
+  );
   const log = useCallback(
     (s: string) => setLogs((l) => [s, ...l].slice(0, 100)),
     [],
@@ -88,6 +109,12 @@ export function App() {
     },
     [program, log, boardMode, wiring],
   );
+  function changeInputs(values: Record<string, number>) {
+    for (const [name, value] of Object.entries(values))
+      plc.current.set(name, value);
+    if (running) scan(0);
+    else refresh((n) => n + 1);
+  }
   useEffect(() => {
     if (!running) return;
     const id = window.setInterval(scan, 100);
@@ -127,6 +154,7 @@ export function App() {
       if (version !== loadVersion.current) return;
       setRunning(false);
       setProgram(p);
+      if (!p.adapter) setAnalysisExpanded(true);
       setFilename(f.name);
       setShowGrade2Guide(false);
       setActiveDemo(null);
@@ -149,7 +177,18 @@ export function App() {
     a.click();
     URL.revokeObjectURL(url);
   }
-  const names = [...new Set([...analysis.devices.keys(), ...extra])].sort();
+  const names = useMemo(
+    () => [...new Set([...analysis.devices.keys(), ...extra])].sort(),
+    [analysis, extra],
+  );
+  const inputNames = useMemo(
+    () => names.filter((n) => device(n)?.kind === "X"),
+    [names],
+  );
+  const outputNames = useMemo(
+    () => names.filter((n) => device(n)?.kind === "Y"),
+    [names],
+  );
   return (
     <div className="studio" data-revision={revision}>
       <aside>
@@ -172,11 +211,7 @@ export function App() {
               key={id}
               onClick={() => {
                 if (["program", "devices"].includes(id)) {
-                  const details =
-                    document.querySelector<HTMLDetailsElement>(
-                      ".analysis-tools",
-                    );
-                  if (details) details.open = true;
+                  setAnalysisExpanded(true);
                 }
               }}
             >
@@ -298,7 +333,9 @@ export function App() {
           </button>
           <button
             disabled={running || !!errors.length}
-            onClick={() => setRunning(true)}
+            onClick={() => {
+              if (scan(0)) setRunning(true);
+            }}
           >
             ▷ 連続実行
           </button>
@@ -363,7 +400,7 @@ export function App() {
                 refresh((n) => n + 1);
               }}
               onRun={() => {
-                if (scan()) setRunning(true);
+                if (scan(0)) setRunning(true);
               }}
               onStop={() => {
                 plant.current.releaseButtons();
@@ -375,8 +412,8 @@ export function App() {
           ) : (
             <TrainingPanel
               key={filename}
-              inputs={names.filter((n) => device(n)?.kind === "X")}
-              outputs={names.filter((n) => device(n)?.kind === "Y")}
+              inputs={inputNames}
+              outputs={outputNames}
               memory={plc.current.memory}
               inputImage={plc.current.inputs}
               running={running}
@@ -397,231 +434,325 @@ export function App() {
               }
               defaultForward={filename === "training_demo.csv" ? "Y1" : ""}
               defaultReverse={filename === "training_demo.csv" ? "Y2" : ""}
-              onInput={(name, value) => {
-                plc.current.set(name, value);
-                refresh((n) => n + 1);
-              }}
+              onInput={(name, value) => changeInputs({ [name]: value })}
+              onInputs={changeInputs}
               onRun={() => {
-                if (scan()) setRunning(true);
+                if (scan(0)) setRunning(true);
               }}
               onStop={() => setRunning(false)}
             />
           )}
         </div>
-        <details className="analysis-tools" open={!program.adapter}>
+        <details
+          className="analysis-tools"
+          open={analysisExpanded}
+          onToggle={(e) => setAnalysisExpanded(e.currentTarget.open)}
+        >
           <summary>命令一覧・デバイス・クロスリファレンス（詳細解析）</summary>
-          <div className="workspace">
-            <section id="program" className="panel">
-              <div className="panel-title">
-                <h2>命令リスト</h2>
-                <span>選択 STEP {selected ?? "—"}</span>
-              </div>
-              <div className="scroll">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>STEP</th>
-                      <th>命令</th>
-                      <th>オペランド</th>
-                      <th>行</th>
-                      <th>コメント</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {program.instructions.map((i, index) => (
-                      <tr
-                        key={index}
-                        className={selected === i.step ? "selected" : ""}
-                        onClick={() => setSelected(i.step)}
-                      >
-                        <td>
-                          <button
-                            className="step"
-                            onClick={() => setSelected(i.step)}
-                          >
-                            {i.step}
-                          </button>
-                        </td>
-                        <td className="opcode">{i.opcode}</td>
-                        <td>{i.operands.join(" ")}</td>
-                        <td>{i.sourceLine}</td>
-                        <td>{i.comment}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {!program.adapter && (
-                <div className="preview">
-                  <h3>未認識CSVのプレビュー（最大8行）</h3>
-                  <pre>
-                    {program.preview.map((r) => JSON.stringify(r)).join("\n")}
-                  </pre>
-                </div>
-              )}
-            </section>
-            <section className="panel monitor">
-              <div className="panel-title">
-                <h2>デバイスモニター</h2>
-                <span>LIVE MEMORY</span>
-              </div>
-              <p className="muted">
-                Xは次スキャンの入力イメージ。試験盤モデルではXを盤側で操作します。停止中に初期値を設定できます。D値はEnterまたはフォーカス移動で確定、Escで取消。
-              </p>
-              {names.map((name) => {
-                const d = device(name)!;
-                const value =
-                  d.kind === "X"
-                    ? (plc.current.inputs[name] ?? 0)
-                    : plc.current.read(name);
-                const editable = ["X", "Y", "M", "D"].includes(d.kind);
-                const controllable =
-                  editable && (d.kind !== "X" || boardMode === "generic");
-                const monitored =
-                  editable || d.kind === "T" || name === "SM400";
-                return (
-                  <div className="device" key={name}>
-                    <strong>{name}</strong>
-                    {d.kind === "D" ? (
-                      <label>
-                        U16 / I16{" "}
-                        <input
-                          aria-label={name + " 初期値"}
-                          type="number"
-                          min="-32768"
-                          max="65535"
-                          disabled={running}
-                          key={`${name}:${revision}`}
-                          defaultValue={value}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") e.currentTarget.blur();
-                            if (e.key === "Escape") {
-                              e.currentTarget.value = String(value);
-                              e.currentTarget.blur();
-                            }
-                          }}
-                          onBlur={(e) => {
-                            try {
-                              if (!/^-?\d+$/.test(e.currentTarget.value))
-                                throw Error(
-                                  "D初期値は−32768〜65535の整数で指定してください",
-                                );
-                              plc.current.set(
-                                name,
-                                Number(e.currentTarget.value),
-                              );
-                              refresh((n) => n + 1);
-                            } catch (err) {
-                              e.currentTarget.value = String(value);
-                              log((err as Error).message);
-                            }
-                          }}
-                        />
-                        <small>
-                          {value} / {signed16(value)}
-                        </small>
-                      </label>
-                    ) : (
-                      <button
-                        disabled={!controllable || (running && d.kind !== "X")}
-                        className={value ? "on" : ""}
-                        onClick={() => {
-                          plc.current.set(name, value ? 0 : 1);
-                          refresh((n) => n + 1);
-                        }}
-                      >
-                        {monitored ? (value ? "● ON" : "○ OFF") : "監視対象外"}
-                      </button>
-                    )}
+          {analysisExpanded && (
+            <>
+              <div className="workspace">
+                <section id="program" className="panel">
+                  <div className="panel-title">
+                    <h2>命令リスト</h2>
+                    <span>選択 STEP {selected ?? "—"}</span>
                   </div>
-                );
-              })}
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const d = device(newDevice);
-                  if (d && ["X", "Y", "M", "D"].includes(d.kind))
-                    setExtra((a) => [...a, d.name]);
-                  else log("X/Y/M/Dを指定してください");
-                }}
-              >
-                <input
-                  aria-label="監視デバイス追加"
-                  value={newDevice}
-                  onChange={(e) => setNewDevice(e.target.value.toUpperCase())}
-                />
-                <button>追加</button>
-              </form>
-            </section>
-          </div>
-          <section id="devices" className="panel">
-            <div className="panel-title">
-              <h2>クロスリファレンス</h2>
-              <button onClick={download}>CSV出力 ↓</button>
-            </div>
-            <div className="scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>デバイス</th>
-                    <th>使用箇所（step / source line / access）</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...analysis.devices].map(([name, refs]) => (
-                    <tr key={name}>
-                      <td>{name}</td>
-                      <td>
-                        {refs.map((r, i) => (
-                          <button
-                            key={i}
-                            onClick={() => {
-                              setSelected(r.step);
-                              document
-                                .getElementById("program")
-                                ?.scrollIntoView();
-                            }}
-                          >
-                            S{r.step} / L{r.sourceLine} / {r.access}
-                          </button>
-                        ))}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <p className="muted">
-              命令集計:{" "}
-              {[...analysis.counts].map(([k, v]) => `${k}: ${v}`).join(" · ")}
-            </p>
-            {analysis.ranges.map((r, i) => (
-              <p key={i}>
-                範囲: {r.start} / {r.count ?? "不明"}点 / {r.access}
-                （桁指定は展開済み。BMOVの実行は未対応）
-              </p>
-            ))}
-          </section>
+                  <PagedList
+                    items={program.instructions}
+                    label="命令一覧"
+                    pageSize={100}
+                    selectedIndex={selectedIndex}
+                  >
+                    {(visibleInstructions) => (
+                      <div className="scroll">
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>STEP</th>
+                              <th>命令</th>
+                              <th>オペランド</th>
+                              <th>行</th>
+                              <th>コメント</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {visibleInstructions.map((i, index) => (
+                              <tr
+                                key={index}
+                                className={
+                                  selected === i.step ? "selected" : ""
+                                }
+                                onClick={() => setSelected(i.step)}
+                              >
+                                <td>
+                                  <button
+                                    className="step"
+                                    onClick={() => setSelected(i.step)}
+                                  >
+                                    {i.step}
+                                  </button>
+                                </td>
+                                <td className="opcode">{i.opcode}</td>
+                                <td>{i.operands.join(" ")}</td>
+                                <td>{i.sourceLine}</td>
+                                <td>{i.comment}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </PagedList>
+                  {!program.adapter && (
+                    <div className="preview">
+                      <h3>未認識CSVのプレビュー（最大8行）</h3>
+                      <pre>
+                        {program.preview
+                          .map((r) => JSON.stringify(r))
+                          .join("\n")}
+                      </pre>
+                    </div>
+                  )}
+                </section>
+                <section className="panel monitor">
+                  <div className="panel-title">
+                    <h2>デバイスモニター</h2>
+                    <span>LIVE MEMORY</span>
+                  </div>
+                  <p className="muted">
+                    Xは次スキャンの入力イメージ。試験盤モデルではXを盤側で操作します。停止中に初期値を設定できます。D値はEnterまたはフォーカス移動で確定、Escで取消。
+                  </p>
+                  <PagedList
+                    items={names}
+                    label="モニターデバイス"
+                    pageSize={50}
+                  >
+                    {(visibleNames) => (
+                      <>
+                        {visibleNames.map((name) => {
+                          const d = device(name)!;
+                          const value =
+                            d.kind === "X"
+                              ? (plc.current.inputs[name] ?? 0)
+                              : plc.current.read(name);
+                          const editable = ["X", "Y", "M", "D"].includes(
+                            d.kind,
+                          );
+                          const controllable =
+                            editable &&
+                            (d.kind !== "X" || boardMode === "generic");
+                          const monitored =
+                            editable || d.kind === "T" || name === "SM400";
+                          return (
+                            <div className="device" key={name}>
+                              <strong>{name}</strong>
+                              {d.kind === "D" ? (
+                                <label>
+                                  U16 / I16{" "}
+                                  <input
+                                    aria-label={name + " 初期値"}
+                                    type="number"
+                                    min="-32768"
+                                    max="65535"
+                                    disabled={running}
+                                    key={`${name}:${revision}`}
+                                    defaultValue={value}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter")
+                                        e.currentTarget.blur();
+                                      if (e.key === "Escape") {
+                                        e.currentTarget.value = String(value);
+                                        e.currentTarget.blur();
+                                      }
+                                    }}
+                                    onBlur={(e) => {
+                                      try {
+                                        if (
+                                          !/^-?\d+$/.test(e.currentTarget.value)
+                                        )
+                                          throw Error(
+                                            "D初期値は−32768〜65535の整数で指定してください",
+                                          );
+                                        plc.current.set(
+                                          name,
+                                          Number(e.currentTarget.value),
+                                        );
+                                        refresh((n) => n + 1);
+                                      } catch (err) {
+                                        e.currentTarget.value = String(value);
+                                        log((err as Error).message);
+                                      }
+                                    }}
+                                  />
+                                  <small>
+                                    {value} / {signed16(value)}
+                                  </small>
+                                </label>
+                              ) : (
+                                <button
+                                  disabled={
+                                    !controllable || (running && d.kind !== "X")
+                                  }
+                                  className={value ? "on" : ""}
+                                  onClick={() => {
+                                    plc.current.set(name, value ? 0 : 1);
+                                    refresh((n) => n + 1);
+                                  }}
+                                >
+                                  {monitored
+                                    ? value
+                                      ? "● ON"
+                                      : "○ OFF"
+                                    : "監視対象外"}
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </>
+                    )}
+                  </PagedList>
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const d = device(newDevice);
+                      if (d && ["X", "Y", "M", "D"].includes(d.kind))
+                        setExtra((a) => [...a, d.name]);
+                      else log("X/Y/M/Dを指定してください");
+                    }}
+                  >
+                    <input
+                      aria-label="監視デバイス追加"
+                      value={newDevice}
+                      onChange={(e) =>
+                        setNewDevice(e.target.value.toUpperCase())
+                      }
+                    />
+                    <button>追加</button>
+                  </form>
+                </section>
+              </div>
+              <section id="devices" className="panel">
+                <div className="panel-title">
+                  <h2>クロスリファレンス</h2>
+                  <button onClick={download}>CSV出力 ↓</button>
+                </div>
+                <PagedList
+                  items={deviceEntries}
+                  label="デバイス一覧"
+                  pageSize={50}
+                >
+                  {(visibleDevices) => (
+                    <div className="scroll">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>デバイス</th>
+                            <th>使用箇所（step / source line / access）</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {visibleDevices.map(([name, refs]) => (
+                            <tr key={name}>
+                              <td>{name}</td>
+                              <td>
+                                <PagedList
+                                  items={refs}
+                                  label={name + " 使用箇所"}
+                                  pageSize={50}
+                                >
+                                  {(visibleRefs) => (
+                                    <>
+                                      {visibleRefs.map((r, i) => (
+                                        <button
+                                          key={i}
+                                          onClick={() => {
+                                            setSelected(r.step);
+                                            document
+                                              .getElementById("program")
+                                              ?.scrollIntoView();
+                                          }}
+                                        >
+                                          S{r.step} / L{r.sourceLine} /{" "}
+                                          {r.access}
+                                        </button>
+                                      ))}
+                                    </>
+                                  )}
+                                </PagedList>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </PagedList>
+                <p className="muted">
+                  命令集計:{" "}
+                  {[...analysis.counts]
+                    .map(([k, v]) => `${k}: ${v}`)
+                    .join(" · ")}
+                </p>
+                <PagedList
+                  items={analysis.ranges}
+                  label="範囲情報"
+                  pageSize={50}
+                >
+                  {(visibleRanges) => (
+                    <>
+                      {visibleRanges.map((r, i) => (
+                        <p key={i}>
+                          範囲: {r.start} / {r.count ?? "不明"}点 / {r.access}
+                          （桁指定は展開済み。BMOVの実行は未対応）
+                        </p>
+                      ))}
+                    </>
+                  )}
+                </PagedList>
+              </section>
+            </>
+          )}
         </details>
         <section id="diagnostics" className="panel">
           <h2>診断・実行ログ</h2>
-          {errors.map((e, i) => (
-            <p className="error" key={"e" + i}>
-              BLOCK · {e}
-            </p>
-          ))}
-          {program.diagnostics
-            .filter((d) => d.severity === "warning")
-            .map((d, i) => (
-              <p className="notice" key={i}>
-                L{d.sourceLine ?? "—"} · {d.message}
-              </p>
-            ))}
-          {analysis.warnings.map((w) => (
-            <p className="notice" key={w}>
-              {w}
-            </p>
-          ))}
+          <PagedList items={errors} label="実行エラー" pageSize={50}>
+            {(items) => (
+              <>
+                {items.map((e, i) => (
+                  <p className="error" key={i}>
+                    BLOCK · {e}
+                  </p>
+                ))}
+              </>
+            )}
+          </PagedList>
+          <PagedList items={programWarnings} label="解析警告" pageSize={50}>
+            {(items) => (
+              <>
+                {items.map((d, i) => (
+                  <p className="notice" key={i}>
+                    L{d.sourceLine ?? "—"} · {d.message}
+                  </p>
+                ))}
+              </>
+            )}
+          </PagedList>
+          <PagedList
+            items={analysis.warnings}
+            label="複数書込み警告"
+            pageSize={50}
+          >
+            {(items) => (
+              <>
+                {items.map((w, i) => (
+                  <p className="notice" key={i}>
+                    {w}
+                  </p>
+                ))}
+              </>
+            )}
+          </PagedList>
           {!errors.length && (
             <p className="on">● 基本命令のスキャンを実行できます</p>
           )}

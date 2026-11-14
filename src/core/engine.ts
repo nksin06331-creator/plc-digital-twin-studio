@@ -19,6 +19,7 @@ export function validate(p: Program): string[] {
   const errors = p.diagnostics
     .filter((d) => d.severity === "error")
     .map((d) => d.message);
+  const timerOutputs = new Set<string>();
   let active = false,
     outputSeen = false,
     ended = false,
@@ -59,6 +60,10 @@ export function validate(p: Program): string[] {
       if (a.length || !branches) fail("MPSに対応するスタックがありません");
       else if (o === "MPP") branches--;
     } else if (o === "OUT" && device(a[0])?.kind === "T") {
+      const timer = device(a[0])!.name;
+      if (timerOutputs.has(timer))
+        fail(`${timer}への複数OUTは未対応です（タイマー重複書込み）`);
+      timerOutputs.add(timer);
       if (a.length !== 2 || !isWord(a[1])) fail("タイマーは設定値が必要");
     } else if (["OUT", "SET", "RST"].includes(o)) {
       if (a.length !== 1 || !["Y", "M"].includes(device(a[0])?.kind ?? ""))
