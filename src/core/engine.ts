@@ -58,7 +58,10 @@ export function validate(p: Program): string[] {
       branches++;
     } else if (["MRD", "MPP"].includes(o)) {
       if (a.length || !branches) fail("MPSに対応するスタックがありません");
-      else if (o === "MPP") branches--;
+      else {
+        if (o === "MPP") branches--;
+        outputSeen = false;
+      }
     } else if (o === "OUT" && device(a[0])?.kind === "T") {
       const timer = device(a[0])!.name;
       if (timerOutputs.has(timer))
@@ -224,9 +227,11 @@ export class PLC {
             break;
           case "MRD":
             acc = branches.at(-1)!;
+            outputSeen = false;
             break;
           case "MPP":
             acc = branches.pop()!;
+            outputSeen = false;
             break;
           case "OUT":
             if (device(a)?.kind === "T") {
