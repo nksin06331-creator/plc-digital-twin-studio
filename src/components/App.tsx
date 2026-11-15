@@ -84,15 +84,25 @@ export function App() {
     [],
   );
   const scan = useCallback(
-    (elapsedMs = 100) => {
+    (elapsedMs = 100, singleStep = false) => {
       const previousPosition = plant.current.position,
         previousInputs = { ...plc.current.inputs };
       try {
         if (boardMode === "exam") {
-          plant.current.advance(plc.current.memory, wiring, elapsedMs);
+          // Continuous ticks account for motion since the previous evaluation.
+          // A paused single step must first evaluate inputs changed while stopped.
+          plant.current.advance(
+            plc.current.memory,
+            wiring,
+            singleStep ? 0 : elapsedMs,
+          );
           plc.current.inputs = plant.current.inputImage(wiring);
         }
         const trace = plc.current.scan(program, elapsedMs);
+        if (boardMode === "exam" && singleStep) {
+          plant.current.advance(plc.current.memory, wiring, elapsedMs);
+          plc.current.inputs = plant.current.inputImage(wiring);
+        }
         setLastTrace(trace);
         refresh((n) => n + 1);
         log(
@@ -328,7 +338,10 @@ export function App() {
           </div>
         </div>
         <section id="simulation" className="toolbar">
-          <button disabled={running || !!errors.length} onClick={() => scan()}>
+          <button
+            disabled={running || !!errors.length}
+            onClick={() => scan(100, true)}
+          >
             ▶ 1スキャン
           </button>
           <button

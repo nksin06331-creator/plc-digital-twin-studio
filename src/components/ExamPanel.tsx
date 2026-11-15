@@ -105,6 +105,9 @@ export function ExamPanel({
 }: Props) {
   const [draft, setDraft] = useState<ExamWiring>(() => structuredClone(wiring)),
     [message, setMessage] = useState("");
+  useEffect(() => {
+    setDraft(structuredClone(wiring));
+  }, [wiring]);
   const controls = useRef(onOperate);
   controls.current = onOperate;
   useEffect(() => {

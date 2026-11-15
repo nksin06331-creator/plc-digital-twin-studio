@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { buildLadder, type Logic } from "../src/core/ladder";
 import { PLC, validate } from "../src/core/engine";
 import { parseText, MAX_ROWS } from "../src/parser";
 import { analyze, exportDevices } from "../src/analyzer";
@@ -69,4 +70,60 @@ describe("review regression cases", () => {
     expect(csv).toContain('"M0","150","152","write","OUT"');
     expect(csv.split("\r\n")).toHaveLength(152);
   });
+});
+
+describe("restored branch conditions", () => {
+  const evaluate = (node: Logic, values: Record<string, number>): boolean =>
+    node.kind === "contact"
+      ? !!values[node.instruction.operands[0]]
+      : node.kind === "and"
+        ? evaluate(node.left, values) && evaluate(node.right, values)
+        : evaluate(node.left, values) || evaluate(node.right, values);
+
+  it.each(["ANB", "ORB"])(
+    "combines LD blocks after MRD and MPP with %s",
+    (join) => {
+      const p = program([
+        "LD,X0",
+        "MPS,",
+        "AND,X1",
+        "OUT,Y0",
+        "MRD,",
+        "LD,X2",
+        "OR,X3",
+        join + ",",
+        "OUT,Y1",
+        "MPP,",
+        "LD,X4",
+        "OR,X5",
+        join + ",",
+        "OUT,Y2",
+        "END,",
+      ]);
+      expect(validate(p)).toEqual([]);
+      const ladder = buildLadder(p);
+      expect(ladder.errors).toEqual([]);
+      expect(ladder.rungs).toHaveLength(3);
+      for (let mask = 0; mask < 64; mask++) {
+        const values = Object.fromEntries(
+          Array.from({ length: 6 }, (_, n) => ["X" + n, (mask >> n) & 1]),
+        );
+        const plc = new PLC();
+        for (const [name, value] of Object.entries(values))
+          plc.set(name, value);
+        plc.scan(p);
+        const combine = (a: boolean, b: boolean) =>
+          join === "ANB" ? a && b : a || b;
+        const expected = [
+          !!values.X0 && !!values.X1,
+          combine(!!values.X0, !!(values.X2 || values.X3)),
+          combine(!!values.X0, !!(values.X4 || values.X5)),
+        ];
+        for (let n = 0; n < expected.length; n++) {
+          expect(plc.read("Y" + n)).toBe(Number(expected[n]));
+          expect(evaluate(ladder.rungs[n].condition, values)).toBe(expected[n]);
+        }
+      }
+    },
+  );
 });

@@ -40,9 +40,10 @@ export function buildLadder(program: Program): {
     else if (o === "ANB" || o === "ORB")
       current = join(o === "ANB" ? "and" : "or", blocks.pop()!, current!);
     else if (o === "MPS") branches.push(current!);
-    else if (o === "MRD") current = branches.at(-1)!;
-    else if (o === "MPP") current = branches.pop()!;
-    else if (o === "END") break;
+    else if (o === "MRD" || o === "MPP") {
+      current = o === "MRD" ? branches.at(-1)! : branches.pop()!;
+      outputSeen = false;
+    } else if (o === "END") break;
     else {
       rungs.push({ condition: current!, output: instruction });
       outputSeen = true;
