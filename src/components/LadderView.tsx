@@ -1,4 +1,10 @@
-import { useMemo, useState, type CSSProperties } from "react";
+import {
+  useLayoutEffect,
+  useRef,
+  useMemo,
+  useState,
+  type CSSProperties,
+} from "react";
 import { buildLadder, type Logic } from "../core/ladder";
 import type { Instruction, Program } from "../core/model";
 import type { ScanTrace } from "../core/engine";
@@ -135,6 +141,8 @@ function commentFor(condition: Logic, output: Instruction) {
 }
 const zoomLevels = [40, 50, 60, 80, 100, 125, 150, 200];
 export function LadderView({
+  filename,
+  update,
   program,
   trace,
   selected,
@@ -142,6 +150,8 @@ export function LadderView({
   expanded,
   onToggleExpanded,
 }: {
+  filename: string;
+  update: number;
   program: Program;
   trace: ScanTrace[];
   selected: number | null;
@@ -150,6 +160,10 @@ export function LadderView({
   onToggleExpanded: () => void;
 }) {
   const [zoom, setZoom] = useState(50);
+  const canvasRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    canvasRef.current?.scrollTo({ top: 0, left: 0 });
+  }, [program]);
   const ladder = useMemo(
     () =>
       program.instructions.length > 1000
@@ -172,6 +186,10 @@ export function LadderView({
           {trace.length ? "最終スキャン" : "未実行"}
         </span>
       </div>
+      <p className="ladder-program" aria-label="ラダー表示中のプログラム">
+        <strong>{filename}</strong> · 更新 #{update} ·{" "}
+        {program.instructions.length}命令 / {ladder.rungs.length}出力回路
+      </p>
       <div className="ladder-controls" aria-label="ラダー表示操作">
         <button onClick={() => setZoom(50)}>全体表示（50%）</button>
         <button
@@ -224,6 +242,7 @@ export function LadderView({
         <div className="error">{ladder.errors[0]}</div>
       ) : (
         <div
+          ref={canvasRef}
           className={"ladder-canvas" + (zoom <= 60 ? " ladder-compact" : "")}
           role="region"
           aria-label="ラダー回路（縦横スクロール）"
