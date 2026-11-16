@@ -40,6 +40,7 @@ export function App() {
     [newDevice, setNewDevice] = useState("M0");
   const [showGrade2Guide, setShowGrade2Guide] = useState(false);
   const [analysisExpanded, setAnalysisExpanded] = useState(false);
+  const [ladderExpanded, setLadderExpanded] = useState(false);
   const [activeDemo, setActiveDemo] = useState<string | null>("exam_conveyor");
   const [lastTrace, setLastTrace] = useState<ScanTrace[]>([]);
   const [boardMode, setBoardMode] = useState<"exam" | "generic">("exam");
@@ -409,12 +410,18 @@ export function App() {
             running={running}
           />
         )}
-        <div className="live-workbench">
+        <div
+          className={
+            "live-workbench" + (ladderExpanded ? " ladder-expanded" : "")
+          }
+        >
           <LadderView
             program={program}
             trace={lastTrace}
             selected={selected}
             onSelect={setSelected}
+            expanded={ladderExpanded}
+            onToggleExpanded={() => setLadderExpanded((value) => !value)}
           />
           {boardMode === "exam" ? (
             <ExamPanel

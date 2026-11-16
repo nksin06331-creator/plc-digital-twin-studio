@@ -591,30 +591,59 @@ td:last-child {
   background: #183f38;
   white-space: nowrap;
 }
+/* Ladder drawing uses a light work surface for clear symbols and device labels. */
 .ladder-canvas {
   overflow: auto;
-  max-height: 700px;
-  background: #0b1521;
-  padding: 12px;
-  font-family: ui-monospace, monospace;
+  max-height: min(65vh, 850px);
+  background: #f4f7fb;
+  color: #26364a;
+  border: 1px solid #9cacc1;
+  border-radius: 6px;
+  font-family: ui-monospace, "Consolas", monospace;
+  scrollbar-color: #7288a1 #e5ebf3;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+}
+.ladder-canvas:focus-visible {
+  outline: 3px solid #64abed;
+  outline-offset: 3px;
+}
+.ladder-network {
+  padding: calc(12px * var(--ladder-scale)) 14px;
+  border-bottom: 1px solid #b7c5d5;
+}
+.ladder-network:nth-child(even) {
+  background: #edf2f8;
+}
+.ladder-network.selected {
+  background: #e1efff;
+}
+.ladder-network-title {
+  max-width: 72ch;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-bottom: 8px;
+  font-size: calc(12px * var(--ladder-scale));
+  color: #465b73;
+}
+.ladder-network-title b {
+  color: #22354b;
+}
+.ladder-comment {
+  overflow-wrap: anywhere;
 }
 .ladder-rung {
   display: flex;
   align-items: stretch;
   min-width: max-content;
-  min-height: 110px;
-  padding: 0 10px;
-  color: #70859c;
-}
-.rung-number {
-  align-self: center;
-  width: 30px;
-  font-size: 10px;
+  min-height: calc(104px * var(--ladder-scale));
+  color: #52657b;
 }
 .left-rail,
 .right-rail {
   width: 3px;
-  background: #8399b3;
+  background: #42556d;
   flex-shrink: 0;
 }
 .ladder-series {
@@ -625,87 +654,166 @@ td:last-child {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  border-left: 2px solid #70859c;
-  border-right: 2px solid #70859c;
-  margin: 20px 0;
 }
 .ladder-parallel > div {
   display: flex;
   align-items: center;
   position: relative;
 }
+.ladder-parallel > div:before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-left: 2px solid #6c7d92;
+  border-right: 2px solid #6c7d92;
+  pointer-events: none;
+}
+.ladder-parallel > div:first-child:before {
+  top: 50%;
+}
+.ladder-parallel > div:last-child:before {
+  bottom: 50%;
+}
 .ladder-parallel > div:after {
   content: "";
   height: 2px;
   flex: 1;
-  background: #70859c;
+  background: #6c7d92;
 }
 .ladder-contact,
 .ladder-output {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  align-self: center;
+  display: grid;
+  grid-template-rows:
+    calc(24px * var(--ladder-scale)) calc(40px * var(--ladder-scale))
+    calc(24px * var(--ladder-scale));
+  justify-items: center;
   align-items: center;
-  justify-content: center;
-  min-width: 110px;
-  min-height: 88px;
+  align-self: center;
+  min-width: calc(140px * var(--ladder-scale));
   border: 0;
-  background: transparent !important;
-  color: #91a6bd;
-  padding: 10px 14px;
+  border-radius: 4px;
+  background: transparent;
+  color: #526174;
+  padding: calc(8px * var(--ladder-scale)) calc(6px * var(--ladder-scale));
 }
 .ladder-contact span,
 .ladder-output span {
-  font-size: 12px;
+  font-size: calc(16px * var(--ladder-scale));
+  font-weight: 650;
   white-space: nowrap;
-}
-.ladder-contact b,
-.ladder-output b {
-  font-size: 23px;
-  white-space: nowrap;
-  font-weight: 500;
 }
 .ladder-contact small,
 .ladder-output small {
-  font-size: 9px;
+  font-size: calc(11px * var(--ladder-scale));
   color: inherit;
+  white-space: nowrap;
+}
+.ladder-symbol {
+  display: block;
+  width: calc(116px * var(--ladder-scale));
+  height: calc(40px * var(--ladder-scale));
+  overflow: visible;
+}
+.ladder-symbol path,
+.ladder-symbol rect {
+  stroke: currentColor;
+  stroke-width: 2.4;
+  fill: none;
+}
+.ladder-symbol text {
+  fill: currentColor;
+  stroke: none;
+  font:
+    600 16px ui-monospace,
+    monospace;
 }
 .ladder-contact:before,
-.ladder-contact:after {
+.ladder-contact:after,
+.ladder-output:before,
+.ladder-output:after {
   content: "";
   position: absolute;
-  top: 50%;
+  top: calc(50% - 1px);
   height: 2px;
   background: currentColor;
-  width: 10px;
+  width: calc((100% - 116px * var(--ladder-scale)) / 2);
 }
-.ladder-contact:before {
+.ladder-contact:before,
+.ladder-output:before {
   left: 0;
 }
-.ladder-contact:after {
+.ladder-contact:after,
+.ladder-output:after {
   right: 0;
 }
 .ladder-wire {
   align-self: center;
   height: 2px;
   background: currentColor;
-  min-width: 35px;
+  min-width: calc(36px * var(--ladder-scale));
   flex: 1;
 }
 .conducting {
   color: #53e3b1 !important;
 }
+.ladder-canvas .conducting {
+  color: #00744d !important;
+  background-color: #e1f6ed;
+}
+.ladder-wire.conducting {
+  background: #00744d;
+}
 .ladder-contact:hover,
 .ladder-output:hover {
-  outline: 1px solid #48657d;
+  background: #dfeaf7;
+  outline: 1px solid #6283ad;
+}
+.ladder-contact[aria-pressed="true"],
+.ladder-output[aria-pressed="true"] {
+  background: #dbeaff;
+  outline: 2px solid #2564af;
+  outline-offset: -2px;
 }
 .ladder-panel .panel-title {
-  position: sticky;
-  top: 0;
+  position: static;
 }
 .open-contact {
-  color: #75879a;
+  color: #526174;
+}
+.ladder-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 12px 0;
+}
+.ladder-controls label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+.ladder-controls select {
+  width: auto;
+  margin: 0;
+  padding: 6px;
+}
+.ladder-controls button {
+  font-size: 12px;
+}
+.ladder-expand {
+  margin-left: auto;
+  border-color: #4b9b9b;
+}
+.ladder-help,
+.ladder-footnote {
+  font-size: 12px;
+  color: #a9bfd4;
+  line-height: 1.7;
+}
+.ladder-help span {
+  color: #72edbc;
 }
 @keyframes motor-spin {
   to {
@@ -1914,4 +2022,27 @@ main [id] {
 }
 .wiring-tables code {
   font-size: 11px;
+}
+
+.live-workbench > .ladder-panel {
+  max-height: none;
+  overflow: visible;
+  min-width: 0;
+}
+.live-workbench.ladder-expanded {
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (max-width: 700px) {
+  .ladder-controls {
+    gap: 6px;
+  }
+  .ladder-expand {
+    margin-left: 0;
+  }
+}
+
+.ladder-sheet {
+  display: grid;
+  width: max-content;
+  min-width: 100%;
 }
