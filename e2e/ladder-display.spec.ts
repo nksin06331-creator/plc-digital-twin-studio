@@ -25,6 +25,9 @@ test("ladder zoom, wide mode and contact selection preserve the running circuit 
     .nth(2)
     .locator("b")
     .textContent();
+  await expect(
+    page.getByRole("combobox", { name: "ラダー表示倍率", exact: true }),
+  ).toHaveValue("50");
   const contact = page.locator("#ladder .ladder-contact").first();
   const beforeWidth = (await page.locator("#ladder").boundingBox())!.width;
   const symbolWidth = (await contact.locator("svg").boundingBox())!.width;
@@ -57,6 +60,12 @@ test("ladder zoom, wide mode and contact selection preserve the running circuit 
     beforeWidth,
     0,
   );
+  await page
+    .getByRole("button", { name: "全体表示（50%）", exact: true })
+    .click();
+  await expect(
+    page.getByRole("combobox", { name: "ラダー表示倍率", exact: true }),
+  ).toHaveValue("50");
   await expect(page.locator(".metrics > div").nth(2).locator("b")).toHaveText(
     scans!,
   );
