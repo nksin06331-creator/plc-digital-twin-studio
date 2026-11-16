@@ -182,6 +182,9 @@ test("generic BCD changes are sampled atomically rather than as intermediate bit
       "step,instruction,operand,comment\n0,LD,SM400,\n1,MOV,K1X10 D0,\n2,BCD,D0 K2Y10,\n3,LD=,D0 K0,\n4,SET,M0,\n5,END,,",
     ),
   });
+  await expect(
+    page.getByRole("region", { name: "現在のプログラム", exact: true }),
+  ).toContainText("atomic.csv");
   await page
     .getByRole("combobox", { name: "BCD設定値", exact: true })
     .selectOption("7");
