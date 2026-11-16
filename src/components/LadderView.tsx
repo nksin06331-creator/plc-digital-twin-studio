@@ -213,7 +213,7 @@ export function LadderView({
           aria-pressed={expanded}
           onClick={onToggleExpanded}
         >
-          {expanded ? "盤と並べて表示" : "ラダーを広く表示"}
+          {expanded ? "幅を均等に戻す" : "回路の幅を広げる"}
         </button>
       </div>
       <p className="ladder-help">

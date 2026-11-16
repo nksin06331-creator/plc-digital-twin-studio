@@ -1,3 +1,4 @@
+import { closeMenu, openMenu, selectBoard, selectDemo } from "./helpers";
 import { test, expect } from "@playwright/test";
 test("comprehensive demo shows captured pallet number, computed product and completed count", async ({
   page,
@@ -5,9 +6,7 @@ test("comprehensive demo shows captured pallet number, computed product and comp
   await page.clock.install({ time: new Date("2026-11-14T00:00:00Z") });
   await page.goto("/");
   await page.clock.pauseAt(new Date("2026-11-14T00:01:00Z"));
-  await page
-    .getByRole("button", { name: "2級対策・総合演習", exact: true })
-    .click();
+  await selectDemo(page, "2級対策・総合演習");
   await expect(page.locator(".grade2-guide")).toBeVisible();
   await expect(
     page.getByRole("combobox", { name: "DSW デジタルスイッチ", exact: true }),
@@ -67,15 +66,13 @@ test("comprehensive demo sets its matching panel and wiring and fits mobile widt
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await page
-    .getByRole("combobox", { name: "盤モデル", exact: true })
-    .selectOption("generic");
-  await page
-    .getByRole("button", { name: "2級対策・総合演習", exact: true })
-    .click();
+  await selectBoard(page, "generic");
+  await selectDemo(page, "2級対策・総合演習");
+  await openMenu(page);
   await expect(
     page.getByRole("combobox", { name: "盤モデル", exact: true }),
   ).toHaveValue("exam");
+  await closeMenu(page);
   await expect(
     page.getByRole("button", { name: "▶ 試験運転開始", exact: true }),
   ).toBeEnabled();
@@ -92,9 +89,7 @@ test("quick pointer clicks start auto and capture emergency/reset without a time
   await page.clock.install({ time: new Date("2026-11-14T00:00:00Z") });
   await page.goto("/");
   await page.clock.pauseAt(new Date("2026-11-14T00:01:00Z"));
-  await page
-    .getByRole("button", { name: "2級対策・総合演習", exact: true })
-    .click();
+  await selectDemo(page, "2級対策・総合演習");
   const status = page.getByRole("status", {
     name: "自動運転の状態",
     exact: true,

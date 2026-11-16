@@ -1,3 +1,4 @@
+import { selectBoard, selectDemo } from "./helpers";
 import { test, expect } from "@playwright/test";
 async function frozen(page: import("@playwright/test").Page) {
   await page.clock.install({ time: new Date("2026-11-14T00:00:00Z") });
@@ -8,9 +9,7 @@ test("resume evaluates a held emergency before any conveyor movement", async ({
   page,
 }) => {
   await frozen(page);
-  await page
-    .getByRole("button", { name: "2級対策・総合演習", exact: true })
-    .click();
+  await selectDemo(page, "2級対策・総合演習");
   await page
     .getByRole("button", { name: "▶ 試験運転開始", exact: true })
     .click();
@@ -49,12 +48,8 @@ test("generic momentary quick clicks latch the training circuit without a period
   page,
 }) => {
   await frozen(page);
-  await page
-    .getByRole("combobox", { name: "盤モデル", exact: true })
-    .selectOption("generic");
-  await page
-    .getByRole("button", { name: "training_demo", exact: true })
-    .click();
+  await selectBoard(page, "generic");
+  await selectDemo(page, "training_demo");
   await page
     .getByRole("button", { name: "▶ 試験運転開始", exact: true })
     .click();
@@ -175,9 +170,7 @@ test("generic BCD changes are sampled atomically rather than as intermediate bit
   page,
 }) => {
   await frozen(page);
-  await page
-    .getByRole("combobox", { name: "盤モデル", exact: true })
-    .selectOption("generic");
+  await selectBoard(page, "generic");
   await page.locator("#import input[type=file]").setInputFiles({
     name: "atomic.csv",
     mimeType: "text/csv",
@@ -210,9 +203,7 @@ test("single step samples a held emergency before moving and executes once", asy
   page,
 }) => {
   await frozen(page);
-  await page
-    .getByRole("button", { name: "2級対策・総合演習", exact: true })
-    .click();
+  await selectDemo(page, "2級対策・総合演習");
   await page
     .getByRole("button", { name: "▶ 試験運転開始", exact: true })
     .click();
@@ -261,9 +252,7 @@ test("loading the comprehensive demo synchronizes edited and applied wiring", as
   await expect(page.locator('.terminal-cell b[title="LS1 → X20"]')).toHaveClass(
     /terminal-active/,
   );
-  await page
-    .getByRole("button", { name: "2級対策・総合演習", exact: true })
-    .click();
+  await selectDemo(page, "2級対策・総合演習");
   await expect(
     page.getByRole("textbox", { name: "LS1 PLC割付", exact: true }),
   ).toHaveValue("X10");

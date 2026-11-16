@@ -41,6 +41,12 @@ export function App() {
   const [showGrade2Guide, setShowGrade2Guide] = useState(false);
   const [analysisExpanded, setAnalysisExpanded] = useState(false);
   const [ladderExpanded, setLadderExpanded] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const mainRef = useRef<HTMLElement>(null);
+  function closeMenu() {
+    setMenuOpen(false);
+    mainRef.current?.focus({ preventScroll: true });
+  }
   const [activeDemo, setActiveDemo] = useState<string | null>("exam_conveyor");
   const [lastTrace, setLastTrace] = useState<ScanTrace[]>([]);
   const [boardMode, setBoardMode] = useState<"exam" | "generic">("exam");
@@ -176,6 +182,7 @@ export function App() {
       setLogs([]);
       setSelected(null);
       setExtra([]);
+      closeMenu();
     } catch (e) {
       log((e as Error).message);
     }
@@ -204,123 +211,177 @@ export function App() {
   );
   return (
     <div className="studio" data-revision={revision}>
-      <aside>
-        <div className="brand">
-          ◈ PLC<span>DIGITAL TWIN STUDIO</span>
-        </div>
-        <p className="caption">WORKSPACE / ローカル解析</p>
-        <nav>
-          {[
-            ["import", "01 ファイル読込"],
-            ["board", "02 試験盤"],
-            ["ladder", "03 ラダー図"],
-            ["program", "命令一覧"],
-            ["devices", "詳細デバイス"],
-            ["simulation", "スキャン操作"],
-            ["diagnostics", "診断・ログ"],
-          ].map(([id, label]) => (
-            <a
-              href={"#" + id}
-              key={id}
-              onClick={() => {
-                if (["program", "devices"].includes(id)) {
-                  setAnalysisExpanded(true);
-                }
-              }}
-            >
-              {label}
-            </a>
-          ))}
-        </nav>
-        <section
-          id="import"
-          className="drop"
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => {
+      <div
+        className="sidebar-shell"
+        onPointerEnter={(e) => {
+          if (e.pointerType === "mouse") setMenuOpen(true);
+        }}
+        onPointerLeave={(e) => {
+          if (
+            e.pointerType === "mouse" &&
+            !e.currentTarget.contains(document.activeElement)
+          )
+            setMenuOpen(false);
+        }}
+        onFocusCapture={() => setMenuOpen(true)}
+        onBlurCapture={(e) => {
+          if (e.relatedTarget && !e.currentTarget.contains(e.relatedTarget))
+            setMenuOpen(false);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") {
             e.preventDefault();
-            const f = e.dataTransfer.files[0];
-            if (f) void file(f);
-          }}
+            closeMenu();
+          }
+        }}
+      >
+        <button
+          className="sidebar-trigger"
+          aria-label="メニューを開く"
+          aria-controls="studio-menu"
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen(true)}
         >
-          <strong>CSVをドロップ</strong>
-          <p>端末内で解析 · 最大2 MiB</p>
-          <label className="file">
-            ファイルを選択
-            <input
-              type="file"
-              aria-label="CSV・リストファイルを選択"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) void file(f);
-                e.target.value = "";
-              }}
-            />
-          </label>
-          <p>
-            拡張子で絞り込みません。選択後に内容を検証します。ZIP内のファイルは先に展開してください。
-          </p>
-        </section>
-        <label>
-          文字コード
-          <select
-            value={encoding}
-            onChange={(e) => setEncoding(e.target.value as typeof encoding)}
+          ☰<span>メニュー</span>
+        </button>
+        <aside
+          id="studio-menu"
+          className={"sidebar-drawer" + (menuOpen ? " is-open" : "")}
+          aria-hidden={!menuOpen}
+          inert={!menuOpen}
+        >
+          <button
+            className="sidebar-close"
+            aria-label="メニューを閉じる"
+            onClick={closeMenu}
           >
-            <option value="auto">自動（推定）</option>
-            <option value="utf-8">UTF-8</option>
-            <option value="utf-16le">UTF-16LE（GX Works2）</option>
-            <option value="utf-16be">UTF-16BE</option>
-            <option value="shift_jis">Shift_JIS / CP932</option>
-          </select>
-        </label>
-        <label className="panel-mode">
-          盤モデル
-          <select
-            aria-label="盤モデル"
-            value={boardMode}
-            onChange={(e) => {
-              setRunning(false);
-              plc.current.reset();
-              plant.current.reset();
-              setLastTrace([]);
-              setBoardMode(e.target.value as "exam" | "generic");
-              refresh((n) => n + 1);
+            ✕ 閉じる
+          </button>
+          <div className="brand">
+            ◈ PLC<span>DIGITAL TWIN STUDIO</span>
+          </div>
+          <p className="caption">WORKSPACE / ローカル解析</p>
+          <nav>
+            {[
+              ["import", "01 ファイル読込"],
+              ["board", "02 試験盤"],
+              ["ladder", "03 ラダー図"],
+              ["program", "命令一覧"],
+              ["devices", "詳細デバイス"],
+              ["simulation", "スキャン操作"],
+              ["diagnostics", "診断・ログ"],
+            ].map(([id, label]) => (
+              <a
+                href={"#" + id}
+                key={id}
+                onClick={() => {
+                  if (["program", "devices"].includes(id)) {
+                    setAnalysisExpanded(true);
+                  }
+                  closeMenu();
+                }}
+              >
+                {label}
+              </a>
+            ))}
+          </nav>
+          <section
+            id="import"
+            className="drop"
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              const f = e.dataTransfer.files[0];
+              if (f) void file(f);
             }}
           >
-            <option value="exam">2級試験盤（コンベア）</option>
-            <option value="generic">汎用スイッチ・モーター盤</option>
-          </select>
-        </label>
-        <h3>デモ回路</h3>
-        {Object.keys(samples).map((s) => (
-          <button
-            key={s}
-            aria-pressed={activeDemo === s}
-            title={
-              s === "grade2_comprehensive"
-                ? "試験盤・標準割付・右端・番号7・DSW2へ初期化"
-                : undefined
-            }
-            onClick={() => load(samples[s], s + ".csv")}
-          >
-            {s === "grade2_comprehensive"
-              ? "2級対策・総合演習"
-              : s === "counter_example"
-                ? "カウンター演習"
-                : s}
-          </button>
-        ))}
-        <p className="notice">
-          サンプルCSVと検証済み日本語GX
-          Works2リスト形式に対応。未知の列は拒否します。
-        </p>
-        <p className="privacy">
-          ● ブラウザ内で完結
-          <br />
-          CSVの外部送信なし
-        </p>
-      </aside>
-      <main>
+            <strong>CSVをドロップ</strong>
+            <p>端末内で解析 · 最大2 MiB</p>
+            <label className="file">
+              ファイルを選択
+              <input
+                type="file"
+                aria-label="CSV・リストファイルを選択"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void file(f);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+            <p>
+              拡張子で絞り込みません。選択後に内容を検証します。ZIP内のファイルは先に展開してください。
+            </p>
+          </section>
+          <label>
+            文字コード
+            <select
+              value={encoding}
+              onChange={(e) => setEncoding(e.target.value as typeof encoding)}
+            >
+              <option value="auto">自動（推定）</option>
+              <option value="utf-8">UTF-8</option>
+              <option value="utf-16le">UTF-16LE（GX Works2）</option>
+              <option value="utf-16be">UTF-16BE</option>
+              <option value="shift_jis">Shift_JIS / CP932</option>
+            </select>
+          </label>
+          <label className="panel-mode">
+            盤モデル
+            <select
+              aria-label="盤モデル"
+              value={boardMode}
+              onChange={(e) => {
+                setRunning(false);
+                plc.current.reset();
+                plant.current.reset();
+                setLastTrace([]);
+                setBoardMode(e.target.value as "exam" | "generic");
+                refresh((n) => n + 1);
+              }}
+            >
+              <option value="exam">2級試験盤（コンベア）</option>
+              <option value="generic">汎用スイッチ・モーター盤</option>
+            </select>
+          </label>
+          <h3>デモ回路</h3>
+          {Object.keys(samples).map((s) => (
+            <button
+              key={s}
+              aria-pressed={activeDemo === s}
+              title={
+                s === "grade2_comprehensive"
+                  ? "試験盤・標準割付・右端・番号7・DSW2へ初期化"
+                  : undefined
+              }
+              onClick={() => {
+                load(samples[s], s + ".csv");
+                closeMenu();
+              }}
+            >
+              {s === "grade2_comprehensive"
+                ? "2級対策・総合演習"
+                : s === "counter_example"
+                  ? "カウンター演習"
+                  : s}
+            </button>
+          ))}
+          <p className="notice">
+            サンプルCSVと検証済み日本語GX
+            Works2リスト形式に対応。未知の列は拒否します。
+          </p>
+          <p className="privacy">
+            ● ブラウザ内で完結
+            <br />
+            CSVの外部送信なし
+          </p>
+        </aside>
+      </div>
+      <main
+        ref={mainRef}
+        tabIndex={-1}
+        onPointerDown={() => setMenuOpen(false)}
+      >
         <section
           className="current-program"
           aria-label="現在のプログラム"
@@ -403,13 +464,6 @@ export function App() {
         <p className="notice">
           教育用の簡易モデルです。実機との完全一致を保証しません。実設備の検証・制御には使用しないでください。
         </p>
-        {showGrade2Guide && (
-          <Grade2Guide
-            key={program.instructions[0]?.comment}
-            memory={plc.current.memory}
-            running={running}
-          />
-        )}
         <div
           className={
             "live-workbench" + (ladderExpanded ? " ladder-expanded" : "")
@@ -495,6 +549,13 @@ export function App() {
             />
           )}
         </div>
+        {showGrade2Guide && (
+          <Grade2Guide
+            key={program.instructions[0]?.comment}
+            memory={plc.current.memory}
+            running={running}
+          />
+        )}
         <details
           className="analysis-tools"
           open={analysisExpanded}

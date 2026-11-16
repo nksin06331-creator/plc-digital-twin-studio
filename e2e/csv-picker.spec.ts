@@ -1,3 +1,4 @@
+import { openMenu } from "./helpers";
 import { test, expect } from "@playwright/test";
 
 for (const width of [1366, 390]) {
@@ -24,6 +25,7 @@ for (const width of [1366, 390]) {
       .map((r) => r.map((s) => `"${s}"`).join("\t"))
       .join("\r\n");
     const chooser = page.waitForEvent("filechooser");
+    await openMenu(page);
     await page.locator("#import .file").click();
     await (
       await chooser

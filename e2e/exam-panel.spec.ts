@@ -1,3 +1,4 @@
+import { openMenu, closeMenu } from "./helpers";
 import { test, expect } from "@playwright/test";
 test("fixed exam layout and physical inputs operate conveyor and limit switches", async ({
   page,
@@ -5,9 +6,11 @@ test("fixed exam layout and physical inputs operate conveyor and limit switches"
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
+  await openMenu(page);
   await expect(
     page.getByRole("combobox", { name: "盤モデル", exact: true }),
   ).toHaveValue("exam");
+  await closeMenu(page);
   await expect(page.locator(".exam-operators .exam-push")).toHaveCount(5);
   await expect(page.locator(".pilot-lamp")).toHaveCount(5);
   await expect(page.locator(".limit-sensor")).toHaveCount(5);
