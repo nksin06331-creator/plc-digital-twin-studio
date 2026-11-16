@@ -115,29 +115,26 @@ export function ExamPanel({
       .length;
   const stageRef = useRef<HTMLDivElement>(null);
   const [stageScale, setStageScale] = useState(1);
+  const [stageHeight, setStageHeight] = useState(0);
   const [fitBoard, setFitBoard] = useState(true);
   useEffect(() => {
     const target = stageRef.current;
     if (!target) return;
     const panel = target.closest("#board") as HTMLElement | null;
     const observer = new ResizeObserver(() => {
-      const stage = target.firstElementChild as HTMLElement | null;
+      const stage = target.querySelector<HTMLElement>(".exam-stage");
       if (!stage || !panel || target.clientWidth <= 0) return;
       const availableHeight = Math.max(
         160,
         panel.clientHeight - target.offsetTop - 16,
       );
-      // Zoom rounds text metrics, so sub-percent adjustments can alternate
-      // between two line layouts forever. Round down to stable 1% steps.
-      const scale =
-        Math.floor(
-          100 *
-            Math.min(
-              1,
-              target.clientWidth / 700,
-              availableHeight / Math.max(1, stage.offsetHeight),
-            ),
-        ) / 100;
+      const naturalHeight = stage.offsetHeight;
+      setStageHeight(naturalHeight);
+      const scale = Math.min(
+        1,
+        target.clientWidth / 700,
+        availableHeight / Math.max(1, naturalHeight),
+      );
       setStageScale((previous) =>
         Math.abs(previous - scale) < 0.002 ? previous : scale,
       );
@@ -275,325 +272,338 @@ export function ExamPanel({
       </div>
       <div className="exam-stage-scroll" ref={stageRef}>
         <div
-          className="exam-stage"
           style={{
-            zoom: fitBoard ? stageScale : 1,
-            width: 700,
-            minWidth: 700,
-            maxWidth: "none",
+            width: fitBoard ? 700 * stageScale : 700,
+            height:
+              fitBoard && stageHeight ? stageHeight * stageScale : undefined,
+            marginInline: "auto",
+            overflow: fitBoard ? "hidden" : undefined,
           }}
         >
-          <i className="mounting-screw screw-tl" />
-          <i className="mounting-screw screw-tr" />
-          <i className="mounting-screw screw-bl" />
-          <i className="mounting-screw screw-br" />
-          <div className="exam-terminal">
-            <span>TB / DC24V</span>
-            <div className="terminal-cells">
-              {Array.from({ length: 20 }, (_, i) => (
-                <div className="terminal-cell" key={i}>
-                  {i < 4 ? (
-                    <>
-                      <b>＋</b>
-                      <b>−</b>
-                    </>
-                  ) : (
-                    <>
-                      <b
-                        className={
-                          outputs[outputPoints[i - 4]?.[0]]
-                            ? "terminal-active"
-                            : ""
-                        }
-                        title={
-                          outputPoints[i - 4]
-                            ? outputPoints[i - 4][0] +
-                              " → " +
-                              wiring.outputs[outputPoints[i - 4][0]]
-                            : ""
-                        }
-                      >
-                        {i < 18 ? i + 16 : "—"}
-                      </b>
-                      <b
-                        className={
-                          image[wiring.inputs[inputPoints[i - 4][0]]]
-                            ? "terminal-active"
-                            : ""
-                        }
-                        title={
-                          inputPoints[i - 4][0] +
-                          " → " +
-                          wiring.inputs[inputPoints[i - 4][0]]
-                        }
-                      >
-                        {i - 3}
-                      </b>
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="exam-upper">
-            <div className="exam-breaker">
-              <strong>CP1</strong>
-              <button
-                aria-label="CP1 盤電源"
-                aria-pressed={plant.power}
-                onClick={() =>
-                  onOperate((p) => {
-                    p.power = !p.power;
-                    p.releaseButtons();
-                  })
-                }
-              >
-                <small>ON</small>
-                <b className={plant.power ? "breaker-on" : ""} />
-                <small>OFF</small>
-              </button>
-              <small>サーキットプロテクタ</small>
-            </div>
-            <div className="exam-relays">
-              {(["RY1", "RY2"] as const).map((name, index) => (
-                <div key={name}>
-                  <strong>{name}</strong>
-                  <div
-                    role="status"
-                    aria-label={name + " リレー"}
-                    className={
-                      "relay-case " +
-                      ((name === "RY1" ? drive.left : drive.right)
-                        ? "energized"
-                        : "")
-                    }
-                  >
-                    <span className="relay-coil" />
-                    <i />
-                    <small>
-                      {(name === "RY1" ? drive.left : drive.right)
-                        ? "ON"
-                        : "OFF"}
-                    </small>
-                  </div>
-                  <small>
-                    {index === 0 ? "左行" : "右行"} / {wiring.outputs[name]}
-                  </small>
-                </div>
-              ))}
-            </div>
-            <div className="exam-outlet">
-              <span>コンセント</span>
-              <div>
-                Ⅱ<br />⊙
-              </div>
-              <small>外形表示のみ</small>
-            </div>
-          </div>
-          <div className="exam-conveyor-title">
-            <strong>コンベア・ワークブロック</strong>
-            <span role="status" aria-label="搬送状態">
-              {running ? direction : "スキャン停止"} /{" "}
-              {(plant.position * 100).toFixed(0)}%
-            </span>
-          </div>
           <div
-            className={
-              "exam-conveyor " +
-              (running && (drive.left || drive.right) ? "moving " : "") +
-              (drive.left ? "to-left" : "to-right")
-            }
+            className="exam-stage"
+            style={{
+              transform: fitBoard ? `scale(${stageScale})` : undefined,
+              transformOrigin: "top left",
+              width: 700,
+              minWidth: 700,
+              maxWidth: "none",
+            }}
           >
-            <div className="conveyor-rail rail-top" />
-            <div className="conveyor-belt" />
-            <div className="conveyor-roller roller-left" />
-            <div className="conveyor-roller roller-right" />
-            <div
-              className="work-pallet"
-              aria-label="パレット"
-              data-position={plant.position.toFixed(4)}
-              style={{ left: `${18 + plant.position * 68}%` }}
-            >
-              <small>NO.{plant.palletCode}</small>
-              {[2, 1, 0].map((bit) => (
+            <i className="mounting-screw screw-tl" />
+            <i className="mounting-screw screw-tr" />
+            <i className="mounting-screw screw-bl" />
+            <i className="mounting-screw screw-br" />
+            <div className="exam-terminal">
+              <span>TB / DC24V</span>
+              <div className="terminal-cells">
+                {Array.from({ length: 20 }, (_, i) => (
+                  <div className="terminal-cell" key={i}>
+                    {i < 4 ? (
+                      <>
+                        <b>＋</b>
+                        <b>−</b>
+                      </>
+                    ) : (
+                      <>
+                        <b
+                          className={
+                            outputs[outputPoints[i - 4]?.[0]]
+                              ? "terminal-active"
+                              : ""
+                          }
+                          title={
+                            outputPoints[i - 4]
+                              ? outputPoints[i - 4][0] +
+                                " → " +
+                                wiring.outputs[outputPoints[i - 4][0]]
+                              : ""
+                          }
+                        >
+                          {i < 18 ? i + 16 : "—"}
+                        </b>
+                        <b
+                          className={
+                            image[wiring.inputs[inputPoints[i - 4][0]]]
+                              ? "terminal-active"
+                              : ""
+                          }
+                          title={
+                            inputPoints[i - 4][0] +
+                            " → " +
+                            wiring.inputs[inputPoints[i - 4][0]]
+                          }
+                        >
+                          {i - 3}
+                        </b>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="exam-upper">
+              <div className="exam-breaker">
+                <strong>CP1</strong>
                 <button
-                  key={bit}
-                  type="button"
-                  className="pallet-bolt"
-                  aria-label={`ネジ LS${bit + 3}（重み${1 << bit}）`}
-                  aria-pressed={!!(plant.palletCode & (1 << bit))}
-                  title={`LS${bit + 3} / 重み${1 << bit}: ${plant.palletCode & (1 << bit) ? "取り付け済み（クリックで外す）" : "取り外し済み（クリックで付ける）"}`}
+                  aria-label="CP1 盤電源"
+                  aria-pressed={plant.power}
                   onClick={() =>
                     onOperate((p) => {
-                      p.palletCode ^= 1 << bit;
+                      p.power = !p.power;
+                      p.releaseButtons();
                     })
                   }
                 >
-                  <span
-                    className={
-                      plant.palletCode & (1 << bit) ? "bolt fitted" : "bolt"
-                    }
-                  />
+                  <small>ON</small>
+                  <b className={plant.power ? "breaker-on" : ""} />
+                  <small>OFF</small>
                 </button>
-              ))}
-            </div>
-            <div className="left-sensors">
-              {(["LS5", "LS4", "LS3", "LS2"] as const).map((name) => (
-                <div
-                  className={
-                    "limit-sensor " +
-                    (plant.power && signals[name] ? "detected" : "")
-                  }
-                  role="status"
-                  aria-label={name + " センサー"}
-                  key={name}
-                >
-                  <b>{name}</b>
-                  <i />
-                  {signals[name] && plant.power ? "ON" : "OFF"}
+                <small>サーキットプロテクタ</small>
+              </div>
+              <div className="exam-relays">
+                {(["RY1", "RY2"] as const).map((name, index) => (
+                  <div key={name}>
+                    <strong>{name}</strong>
+                    <div
+                      role="status"
+                      aria-label={name + " リレー"}
+                      className={
+                        "relay-case " +
+                        ((name === "RY1" ? drive.left : drive.right)
+                          ? "energized"
+                          : "")
+                      }
+                    >
+                      <span className="relay-coil" />
+                      <i />
+                      <small>
+                        {(name === "RY1" ? drive.left : drive.right)
+                          ? "ON"
+                          : "OFF"}
+                      </small>
+                    </div>
+                    <small>
+                      {index === 0 ? "左行" : "右行"} / {wiring.outputs[name]}
+                    </small>
+                  </div>
+                ))}
+              </div>
+              <div className="exam-outlet">
+                <span>コンセント</span>
+                <div>
+                  Ⅱ<br />⊙
                 </div>
-              ))}
+                <small>外形表示のみ</small>
+              </div>
+            </div>
+            <div className="exam-conveyor-title">
+              <strong>コンベア・ワークブロック</strong>
+              <span role="status" aria-label="搬送状態">
+                {running ? direction : "スキャン停止"} /{" "}
+                {(plant.position * 100).toFixed(0)}%
+              </span>
             </div>
             <div
               className={
-                "limit-sensor right-sensor " +
-                (plant.power && signals.LS1 ? "detected" : "")
+                "exam-conveyor " +
+                (running && (drive.left || drive.right) ? "moving " : "") +
+                (drive.left ? "to-left" : "to-right")
               }
-              role="status"
-              aria-label="LS1 センサー"
             >
-              <b>LS1</b>
-              <i />
-              {signals.LS1 && plant.power ? "ON" : "OFF"}
-            </div>
-            <span className="conveyor-left-label">左端</span>
-            <span className="conveyor-right-label">右端</span>
-            <div className="conveyor-rail rail-bottom" />
-          </div>
-          <div className="exam-lamps">
-            <div>
-              <span>電源</span>
+              <div className="conveyor-rail rail-top" />
+              <div className="conveyor-belt" />
+              <div className="conveyor-roller roller-left" />
+              <div className="conveyor-roller roller-right" />
               <div
-                role="status"
-                aria-label="電源表示灯"
+                className="work-pallet"
+                aria-label="パレット"
+                data-position={plant.position.toFixed(4)}
+                style={{ left: `${18 + plant.position * 68}%` }}
+              >
+                <small>NO.{plant.palletCode}</small>
+                {[2, 1, 0].map((bit) => (
+                  <button
+                    key={bit}
+                    type="button"
+                    className="pallet-bolt"
+                    aria-label={`ネジ LS${bit + 3}（重み${1 << bit}）`}
+                    aria-pressed={!!(plant.palletCode & (1 << bit))}
+                    title={`LS${bit + 3} / 重み${1 << bit}: ${plant.palletCode & (1 << bit) ? "取り付け済み（クリックで外す）" : "取り外し済み（クリックで付ける）"}`}
+                    onClick={() =>
+                      onOperate((p) => {
+                        p.palletCode ^= 1 << bit;
+                      })
+                    }
+                  >
+                    <span
+                      className={
+                        plant.palletCode & (1 << bit) ? "bolt fitted" : "bolt"
+                      }
+                    />
+                  </button>
+                ))}
+              </div>
+              <div className="left-sensors">
+                {(["LS5", "LS4", "LS3", "LS2"] as const).map((name) => (
+                  <div
+                    className={
+                      "limit-sensor " +
+                      (plant.power && signals[name] ? "detected" : "")
+                    }
+                    role="status"
+                    aria-label={name + " センサー"}
+                    key={name}
+                  >
+                    <b>{name}</b>
+                    <i />
+                    {signals[name] && plant.power ? "ON" : "OFF"}
+                  </div>
+                ))}
+              </div>
+              <div
                 className={
-                  "pilot-lamp power-lamp " + (plant.power ? "illuminated" : "")
+                  "limit-sensor right-sensor " +
+                  (plant.power && signals.LS1 ? "detected" : "")
                 }
-              />
+                role="status"
+                aria-label="LS1 センサー"
+              >
+                <b>LS1</b>
+                <i />
+                {signals.LS1 && plant.power ? "ON" : "OFF"}
+              </div>
+              <span className="conveyor-left-label">左端</span>
+              <span className="conveyor-right-label">右端</span>
+              <div className="conveyor-rail rail-bottom" />
             </div>
-            {(["PL1", "PL2", "PL3", "PL4"] as const).map((name) => (
-              <div key={name}>
-                <span>{name}</span>
+            <div className="exam-lamps">
+              <div>
+                <span>電源</span>
                 <div
                   role="status"
-                  aria-label={name + " 表示灯"}
+                  aria-label="電源表示灯"
                   className={
-                    "pilot-lamp " + (outputs[name] ? "illuminated" : "")
+                    "pilot-lamp power-lamp " +
+                    (plant.power ? "illuminated" : "")
                   }
                 />
-                <small>{wiring.outputs[name]}</small>
               </div>
-            ))}
-          </div>
-          <div className="exam-operators">
-            {(["SS0", "SS1"] as const).map((name) => (
-              <div className="exam-control" key={name}>
-                <span>{name === "SS0" ? "手動・自動" : "連続 切・入"}</span>
-                <button
-                  aria-label={name + " 切替スイッチ"}
-                  className={
-                    "exam-selector " + (plant.selectors[name] ? "engaged" : "")
-                  }
-                  aria-pressed={plant.selectors[name]}
-                  onClick={() =>
-                    onOperate((p) => {
-                      p.selectors[name] = !p.selectors[name];
-                    })
-                  }
-                >
-                  <i />
-                </button>
-                <strong>{name}</strong>
-                <small>
-                  {plant.selectors[name]
-                    ? name === "SS0"
-                      ? "自動"
-                      : "入"
-                    : name === "SS0"
-                      ? "手動"
-                      : "切"}
-                </small>
-              </div>
-            ))}
-            {(["PB1", "PB2", "PB3", "PB4", "PB5"] as PushButton[]).map(
-              (name, i) => (
-                <div className="exam-control" key={name}>
+              {(["PL1", "PL2", "PL3", "PL4"] as const).map((name) => (
+                <div key={name}>
                   <span>{name}</span>
-                  <Momentary
-                    name={name}
-                    pressed={plant.pressed[name]}
-                    onPress={(value) => pressed(name, value)}
+                  <div
+                    role="status"
+                    aria-label={name + " 表示灯"}
+                    className={
+                      "pilot-lamp " + (outputs[name] ? "illuminated" : "")
+                    }
                   />
-                  <small>{["Z", "X", "C", "V", "B"][i]}</small>
+                  <small>{wiring.outputs[name]}</small>
                 </div>
-              ),
-            )}
-            <div className="exam-control dsw-control">
-              <span>DSW</span>
-              <div className="dsw-thumbwheel">
-                <button
-                  type="button"
-                  className="dsw-step"
-                  aria-label="DSWを1増やす"
-                  title="1増やす（9の次は0）"
-                  onClick={() =>
-                    onOperate((p) => {
-                      p.digitalSwitch = (p.digitalSwitch + 1) % 10;
-                    })
-                  }
-                >
-                  ＋
-                </button>
-                <select
-                  aria-label="DSW デジタルスイッチ"
-                  value={plant.digitalSwitch}
-                  onChange={(e) =>
-                    onOperate((p) => {
-                      p.digitalSwitch = Number(e.target.value);
-                    })
-                  }
-                >
-                  {Array.from({ length: 10 }, (_, n) => (
-                    <option key={n}>{n}</option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  className="dsw-step"
-                  aria-label="DSWを1減らす"
-                  title="1減らす（0の前は9）"
-                  onClick={() =>
-                    onOperate((p) => {
-                      p.digitalSwitch = (p.digitalSwitch + 9) % 10;
-                    })
-                  }
-                >
-                  −
-                </button>
+              ))}
+            </div>
+            <div className="exam-operators">
+              {(["SS0", "SS1"] as const).map((name) => (
+                <div className="exam-control" key={name}>
+                  <span>{name === "SS0" ? "手動・自動" : "連続 切・入"}</span>
+                  <button
+                    aria-label={name + " 切替スイッチ"}
+                    className={
+                      "exam-selector " +
+                      (plant.selectors[name] ? "engaged" : "")
+                    }
+                    aria-pressed={plant.selectors[name]}
+                    onClick={() =>
+                      onOperate((p) => {
+                        p.selectors[name] = !p.selectors[name];
+                      })
+                    }
+                  >
+                    <i />
+                  </button>
+                  <strong>{name}</strong>
+                  <small>
+                    {plant.selectors[name]
+                      ? name === "SS0"
+                        ? "自動"
+                        : "入"
+                      : name === "SS0"
+                        ? "手動"
+                        : "切"}
+                  </small>
+                </div>
+              ))}
+              {(["PB1", "PB2", "PB3", "PB4", "PB5"] as PushButton[]).map(
+                (name, i) => (
+                  <div className="exam-control" key={name}>
+                    <span>{name}</span>
+                    <Momentary
+                      name={name}
+                      pressed={plant.pressed[name]}
+                      onPress={(value) => pressed(name, value)}
+                    />
+                    <small>{["Z", "X", "C", "V", "B"][i]}</small>
+                  </div>
+                ),
+              )}
+              <div className="exam-control dsw-control">
+                <span>DSW</span>
+                <div className="dsw-thumbwheel">
+                  <button
+                    type="button"
+                    className="dsw-step"
+                    aria-label="DSWを1増やす"
+                    title="1増やす（9の次は0）"
+                    onClick={() =>
+                      onOperate((p) => {
+                        p.digitalSwitch = (p.digitalSwitch + 1) % 10;
+                      })
+                    }
+                  >
+                    ＋
+                  </button>
+                  <select
+                    aria-label="DSW デジタルスイッチ"
+                    value={plant.digitalSwitch}
+                    onChange={(e) =>
+                      onOperate((p) => {
+                        p.digitalSwitch = Number(e.target.value);
+                      })
+                    }
+                  >
+                    {Array.from({ length: 10 }, (_, n) => (
+                      <option key={n}>{n}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className="dsw-step"
+                    aria-label="DSWを1減らす"
+                    title="1減らす（0の前は9）"
+                    onClick={() =>
+                      onOperate((p) => {
+                        p.digitalSwitch = (p.digitalSwitch + 9) % 10;
+                      })
+                    }
+                  >
+                    −
+                  </button>
+                </div>
+                <small>BCD</small>
               </div>
-              <small>BCD</small>
+              <div className="exam-display">
+                <span>DPL2 DPL1</span>
+                <output aria-label="DPL 数値表示">
+                  {plant.display(memory, wiring)}
+                </output>
+                <small>10位 / 1位</small>
+              </div>
             </div>
-            <div className="exam-display">
-              <span>DPL2 DPL1</span>
-              <output aria-label="DPL 数値表示">
-                {plant.display(memory, wiring)}
-              </output>
-              <small>10位 / 1位</small>
-            </div>
+            <p className="exam-nameplate">
+              SEQUENCE TRAINING PANEL <span>PLC DIGITAL TWIN STUDIO</span>
+            </p>
           </div>
-          <p className="exam-nameplate">
-            SEQUENCE TRAINING PANEL <span>PLC DIGITAL TWIN STUDIO</span>
-          </p>
         </div>
       </div>
       {drive.conflict && (
