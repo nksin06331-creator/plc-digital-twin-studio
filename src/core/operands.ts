@@ -34,11 +34,15 @@ export function offset(name: string, n: number) {
 }
 export function isBit(s: string) {
   const d = device(s);
-  return !!d && (["X", "Y", "M", "T"].includes(d.kind) || d.name === "SM400");
+  return (
+    !!d && (["X", "Y", "M", "T", "C"].includes(d.kind) || d.name === "SM400")
+  );
 }
 export function isWord(s: string) {
   const d = device(s);
-  return constant(s) !== null || d?.kind === "D" || !!group(s);
+  return (
+    constant(s) !== null || ["D", "C"].includes(d?.kind ?? "") || !!group(s)
+  );
 }
 export function isDestination(s: string) {
   const g = group(s);

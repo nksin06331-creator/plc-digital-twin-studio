@@ -16,7 +16,9 @@ import { Grade2Guide } from "./Grade2Guide";
 import grade2 from "../../samples/grade2_comprehensive.csv?raw";
 import exam from "../../samples/exam_conveyor.csv?raw";
 import training from "../../samples/training_demo.csv?raw";
+import counter from "../../samples/counter_example.csv?raw";
 const samples: Record<string, string> = {
+  counter_example: counter,
   grade2_comprehensive: grade2,
   exam_conveyor: exam,
   basic_and: basic,
@@ -300,7 +302,11 @@ export function App() {
             }
             onClick={() => load(samples[s], s + ".csv")}
           >
-            {s === "grade2_comprehensive" ? "2級対策・総合演習" : s}
+            {s === "grade2_comprehensive"
+              ? "2級対策・総合演習"
+              : s === "counter_example"
+                ? "カウンター演習"
+                : s}
           </button>
         ))}
         <p className="notice">
@@ -581,7 +587,9 @@ export function App() {
                             editable &&
                             (d.kind !== "X" || boardMode === "generic");
                           const monitored =
-                            editable || d.kind === "T" || name === "SM400";
+                            editable ||
+                            ["T", "C"].includes(d.kind) ||
+                            name === "SM400";
                           return (
                             <div className="device" key={name}>
                               <strong>{name}</strong>
@@ -627,6 +635,18 @@ export function App() {
                                     {value} / {signed16(value)}
                                   </small>
                                 </label>
+                              ) : d.kind === "C" ? (
+                                <div
+                                  className="counter-monitor"
+                                  aria-label={name + " カウンター"}
+                                >
+                                  <output aria-label={name + " 現在値"}>
+                                    {plc.current.counters[name] ?? 0}
+                                  </output>
+                                  <span className={value ? "on" : ""}>
+                                    接点 {value ? "ON" : "OFF"}
+                                  </span>
+                                </div>
                               ) : (
                                 <button
                                   disabled={
@@ -655,9 +675,9 @@ export function App() {
                     onSubmit={(e) => {
                       e.preventDefault();
                       const d = device(newDevice);
-                      if (d && ["X", "Y", "M", "D"].includes(d.kind))
+                      if (d && ["X", "Y", "M", "D", "C"].includes(d.kind))
                         setExtra((a) => [...a, d.name]);
-                      else log("X/Y/M/Dを指定してください");
+                      else log("X/Y/M/D/Cを指定してください");
                     }}
                   >
                     <input

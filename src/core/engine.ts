@@ -19,7 +19,8 @@ export function validate(p: Program): string[] {
   const errors = p.diagnostics
     .filter((d) => d.severity === "error")
     .map((d) => d.message);
-  const timerOutputs = new Set<string>();
+  const timerOutputs = new Set<string>(),
+    counterOutputs = new Set<string>();
   let active = false,
     outputSeen = false,
     ended = false,
@@ -47,7 +48,7 @@ export function validate(p: Program): string[] {
     } else if (o !== "END" && !active) fail("先行するLD/LDIが必要");
     if (["LD", "LDI", "LDP", "AND", "ANI", "OR", "ORI"].includes(o)) {
       if (a.length !== 1 || !isBit(a[0]))
-        fail("接点はX/Y/M/TまたはSM400が必要");
+        fail("接点はX/Y/M/T/CまたはSM400が必要");
     } else if (cmp) {
       if (a.length !== 2 || !a.every(isWord)) fail("比較は2つの16bit値が必要");
     } else if (["ANB", "ORB"].includes(o)) {
@@ -68,9 +69,26 @@ export function validate(p: Program): string[] {
         fail(`${timer}への複数OUTは未対応です（タイマー重複書込み）`);
       timerOutputs.add(timer);
       if (a.length !== 2 || !isWord(a[1])) fail("タイマーは設定値が必要");
+    } else if (o === "OUT" && device(a[0])?.kind === "C") {
+      const counter = device(a[0])!.name;
+      if (counterOutputs.has(counter))
+        fail(`${counter}への複数OUTは未対応です（カウンター重複書込み）`);
+      counterOutputs.add(counter);
+      const preset = constant(a[1]);
+      if (
+        a.length !== 2 ||
+        !isWord(a[1]) ||
+        (preset !== null && (preset < 1 || preset > 32767))
+      )
+        fail("カウンター設定値は1〜32767の16bit値が必要");
     } else if (["OUT", "SET", "RST"].includes(o)) {
-      if (a.length !== 1 || !["Y", "M"].includes(device(a[0])?.kind ?? ""))
-        fail("出力先はY/Mのみ");
+      if (
+        a.length !== 1 ||
+        !(o === "RST" ? ["Y", "M", "C"] : ["Y", "M"]).includes(
+          device(a[0])?.kind ?? "",
+        )
+      )
+        fail(o === "RST" ? "RST出力先はY/M/Cのみ" : "出力先はY/Mのみ");
     } else if (["MOV", "BCD"].includes(o)) {
       if (a.length !== 2 || !isWord(a[0]) || !isDestination(a[1]))
         fail("転送元または転送先が不正");
@@ -104,6 +122,8 @@ export class PLC {
   inputs: Memory = {};
   scans = 0;
   timers: Memory = {};
+  counters: Memory = {};
+  private counterEdges: Record<string, boolean> = {};
   private edges: Record<number, boolean> = {};
   set(name: string, value: number) {
     const d = device(name);
@@ -127,6 +147,8 @@ export class PLC {
     this.inputs = {};
     this.scans = 0;
     this.timers = {};
+    this.counters = {};
+    this.counterEdges = {};
     this.edges = {};
   }
   scan(p: Program, elapsedMs = 100): ScanTrace[] {
@@ -136,6 +158,8 @@ export class PLC {
       throw Error("スキャン時間が不正です");
     const memory: Memory = { ...this.memory, ...this.inputs, SM400: 1 },
       timers = { ...this.timers },
+      counters = { ...this.counters },
+      counterEdges = { ...this.counterEdges },
       edges = { ...this.edges };
     const read = (s: string): number => {
       const k = constant(s);
@@ -147,7 +171,10 @@ export class PLC {
           if (memory[offset(g.start.name, j)]) n |= 1 << j;
         return unsigned16(n);
       }
-      return memory[device(s)?.name ?? s] ?? 0;
+      const d = device(s);
+      return d?.kind === "C"
+        ? (counters[d.name] ?? 0)
+        : (memory[d?.name ?? s] ?? 0);
     };
     const write = (s: string, value: number) => {
       const g = group(s);
@@ -206,7 +233,8 @@ export class PLC {
           case "ANI":
           case "OR":
           case "ORI": {
-            contact = !!read(a);
+            const d = device(a);
+            contact = d?.kind === "C" ? !!memory[d.name] : !!read(a);
             if (["LDI", "ANI", "ORI"].includes(o)) contact = !contact;
             if (o === "LDP") contact = pulse(i.step, contact);
             acc = ["LD", "LDI", "LDP"].includes(o)
@@ -243,13 +271,29 @@ export class PLC {
                 ? Math.min((timers[name] ?? 0) + elapsedMs, preset * 100)
                 : 0;
               memory[name] = acc && timers[name] >= preset * 100 ? 1 : 0;
+            } else if (device(a)?.kind === "C") {
+              const preset = signed16(read(b)),
+                name = device(a)!.name;
+              if (preset < 1 || preset > 32767)
+                throw Error(
+                  `ステップ ${i.step}: カウンター設定値は1〜32767が必要です`,
+                );
+              // Coil OFF retains both value and contact. RST does not create a new edge.
+              if (acc && !this.counterEdges[name] && !memory[name]) {
+                counters[name] = Math.min((counters[name] ?? 0) + 1, 32767);
+                if (counters[name] >= preset) memory[name] = 1;
+              }
+              counterEdges[name] = acc;
             } else write(a, acc ? 1 : 0);
             break;
           case "SET":
             if (acc) write(a, 1);
             break;
           case "RST":
-            if (acc) write(a, 0);
+            if (acc) {
+              write(a, 0);
+              if (device(a)?.kind === "C") counters[device(a)!.name] = 0;
+            }
             break;
           case "MOV":
             if (acc) write(b, read(a));
@@ -280,6 +324,8 @@ export class PLC {
     }
     this.memory = memory;
     this.timers = timers;
+    this.counters = counters;
+    this.counterEdges = counterEdges;
     this.edges = edges;
     this.scans++;
     return trace;

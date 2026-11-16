@@ -1,0 +1,10 @@
+step,instruction,operand,comment
+0,LD,X15,サンプル用アダプターの自作演習・PB1の立上りを計数
+1,OUT,C0 K2,2回でC0接点ON・以後は保持
+2,LD,X18,PB4で現在値と接点をリセット
+3,RST,C0,
+4,LD,C0,完了接点でPL1を点灯
+5,OUT,Y32,
+6,LD,SM400,C0の現在値をDPLに表示
+7,BCD,C0 K2Y36,
+8,END,,試験盤の標準割付で操作・実際のGX出力ではありません
