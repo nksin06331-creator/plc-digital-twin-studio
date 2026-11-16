@@ -1,4 +1,10 @@
-import type { Instruction, Program } from "./model";
+import {
+  loadInstructions,
+  andInstructions,
+  orInstructions,
+  type Instruction,
+  type Program,
+} from "./model";
 import { validate } from "./engine";
 import { comparison } from "./operands";
 export type Logic =
@@ -29,13 +35,13 @@ export function buildLadder(program: Program): {
     const o = instruction.opcode,
       cmp = comparison.exec(o),
       leaf: Logic = { kind: "contact", instruction };
-    if (["LD", "LDI", "LDP"].includes(o) || cmp?.[1] === "LD") {
+    if (loadInstructions.includes(o) || cmp?.[1] === "LD") {
       if (current && !outputSeen) blocks.push(current);
       current = leaf;
       outputSeen = false;
-    } else if (["AND", "ANI"].includes(o) || cmp?.[1] === "AND")
+    } else if (andInstructions.includes(o) || cmp?.[1] === "AND")
       current = join("and", current!, leaf);
-    else if (["OR", "ORI"].includes(o) || cmp?.[1] === "OR")
+    else if (orInstructions.includes(o) || cmp?.[1] === "OR")
       current = join("or", current!, leaf);
     else if (o === "ANB" || o === "ORB")
       current = join(o === "ANB" ? "and" : "or", blocks.pop()!, current!);

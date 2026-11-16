@@ -1,0 +1,22 @@
+step,instruction,operand,comment
+0,LD,X15,PB1 enables calculations
+1,MOVP,K1234 D0,Copy once on each rising condition
+2,BCD,D0 K4M100,Pack decimal digits
+3,BIN,K4M100 D1,Decode BCD
+4,+,D1 K6 D2,16bit addition
+5,-,D2 K40 D3,16bit subtraction
+6,/,D3 K10 D4,Quotient D4 and remainder D5
+7,CMP,D4 K120 M0,M0 greater M1 equal M2 less
+8,INC,D6,Increment while enabled
+9,DEC,D7,Decrement while enabled
+10,PLS,M10,One scan on rising condition
+11,PLF,M11,One scan on falling condition
+12,LDF,X15,PB1 release edge
+13,OUT,M12,Falling contact
+14,LD,SM400,Always ON
+15,ANDP,X16,PB2 rising edge
+16,OUT,M13,AND pulse
+17,LDI,SM400,Always OFF
+18,ORF,X16,PB2 falling edge
+19,OUT,M14,OR pulse
+20,END,,Independent synthetic adapter sample

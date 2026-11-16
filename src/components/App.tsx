@@ -24,7 +24,9 @@ import grade2 from "../../samples/grade2_comprehensive.csv?raw";
 import exam from "../../samples/exam_conveyor.csv?raw";
 import training from "../../samples/training_demo.csv?raw";
 import counter from "../../samples/counter_example.csv?raw";
+import special from "../../samples/special_instructions.csv?raw";
 const samples: Record<string, string> = {
+  special_instructions: special,
   counter_example: counter,
   grade2_comprehensive: grade2,
   exam_conveyor: exam,
@@ -204,13 +206,15 @@ export function App() {
     setProgram(parseText(text));
     setFilename(name);
     setActiveDemo(name.replace(/\.csv$/, ""));
-    if (name === "grade2_comprehensive.csv") {
+    if (
+      ["grade2_comprehensive.csv", "special_instructions.csv"].includes(name)
+    ) {
       const nextWiring = defaultWiring();
       setBoardMode("exam");
       setWiring(nextWiring);
       plc.current.reset();
       plant.current.reset();
-      plant.current.digitalSwitch = 2;
+      plant.current.digitalSwitch = name === "grade2_comprehensive.csv" ? 2 : 0;
       plc.current.inputs = plant.current.inputImage(nextWiring);
       setLastTrace([]);
     } else resetSimulation();
@@ -455,8 +459,8 @@ export function App() {
               key={s}
               aria-pressed={activeDemo === s}
               title={
-                s === "grade2_comprehensive"
-                  ? "試験盤・標準割付・右端・番号7・DSW2へ初期化"
+                s === "grade2_comprehensive" || s === "special_instructions"
+                  ? "試験盤・標準割付・右端へ初期化"
                   : undefined
               }
               onClick={() => {
@@ -466,9 +470,11 @@ export function App() {
             >
               {s === "grade2_comprehensive"
                 ? "2級対策・総合演習"
-                : s === "counter_example"
-                  ? "カウンター演習"
-                  : s}
+                : s === "special_instructions"
+                  ? "特殊命令演習"
+                  : s === "counter_example"
+                    ? "カウンター演習"
+                    : s}
             </button>
           ))}
           <p className="notice">
