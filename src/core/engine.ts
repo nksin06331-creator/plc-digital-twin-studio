@@ -272,14 +272,15 @@ export class PLC {
                 : 0;
               memory[name] = acc && timers[name] >= preset * 100 ? 1 : 0;
             } else if (device(a)?.kind === "C") {
-              const preset = signed16(read(b)),
-                name = device(a)!.name;
-              if (preset < 1 || preset > 32767)
-                throw Error(
-                  `ステップ ${i.step}: カウンター設定値は1〜32767が必要です`,
-                );
-              // Coil OFF retains both value and contact. RST does not create a new edge.
+              const name = device(a)!.name;
+              // Read a variable preset only when an unfinished counter counts.
+              // OFF coils and completed counters retain state even before setup.
               if (acc && !this.counterEdges[name] && !memory[name]) {
+                const preset = signed16(read(b));
+                if (preset < 1 || preset > 32767)
+                  throw Error(
+                    `ステップ ${i.step}: カウンター設定値は1〜32767が必要です`,
+                  );
                 counters[name] = Math.min((counters[name] ?? 0) + 1, 32767);
                 if (counters[name] >= preset) memory[name] = 1;
               }

@@ -547,6 +547,9 @@ export function App() {
           />
           {boardMode === "exam" ? (
             <ExamPanel
+              usedIo={deviceEntries
+                .map(([name]) => name)
+                .filter((name) => /^[XY]/.test(name))}
               demoKind={
                 showGrade2Guide
                   ? "grade2"

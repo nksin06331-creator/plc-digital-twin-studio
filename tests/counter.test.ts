@@ -275,3 +275,28 @@ it("parses a GX list counter preset continuation and executes its contact", () =
   plc.scan(p);
   expect(plc.read("Y0")).toBe(1);
 });
+
+it("reads a variable preset only on an unfinished counting edge", () => {
+  const p = program(["LD,X0", "OUT,C0 D0", "END,"]),
+    plc = new PLC();
+  expect(() => plc.scan(p)).not.toThrow();
+  expect(plc.read("C0")).toBe(0);
+  plc.set("D0", 2);
+  plc.set("X0", 1);
+  plc.scan(p);
+  expect(plc.counters.C0).toBe(1);
+  plc.set("D0", 0);
+  expect(() => plc.scan(p)).not.toThrow();
+  plc.set("X0", 0);
+  plc.scan(p);
+  plc.set("D0", 2);
+  plc.set("X0", 1);
+  plc.scan(p);
+  expect(plc.read("C0")).toBe(1);
+  plc.set("D0", 0);
+  plc.set("X0", 0);
+  plc.scan(p);
+  plc.set("X0", 1);
+  expect(() => plc.scan(p)).not.toThrow();
+  expect(plc.counters.C0).toBe(2);
+});

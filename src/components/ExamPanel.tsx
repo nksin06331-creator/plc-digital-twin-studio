@@ -7,11 +7,13 @@ import {
   parseWiring,
   normalizeWiring,
   defaultWiring,
+  x0y20Wiring,
   type ExamWiring,
   type PushButton,
 } from "../core/plant/exam";
 import { AutoRunHelp } from "./AutoRunHelp";
 interface Props {
+  usedIo: string[];
   demoKind?: "grade2" | "basic" | null;
   plant: ExamPlant;
   wiring: ExamWiring;
@@ -92,6 +94,7 @@ function Momentary({
   );
 }
 export function ExamPanel({
+  usedIo,
   demoKind = null,
   plant,
   wiring,
@@ -108,6 +111,11 @@ export function ExamPanel({
   useEffect(() => {
     setDraft(structuredClone(wiring));
   }, [wiring]);
+  const connected = new Set([
+    ...Object.values(wiring.inputs),
+    ...Object.values(wiring.outputs),
+  ]);
+  const unmapped = usedIo.filter((name) => !connected.has(name));
   const pendingChanges =
     inputPoints.filter(([key]) => draft.inputs[key] !== wiring.inputs[key])
       .length +
@@ -144,6 +152,8 @@ export function ExamPanel({
       observer.observe(panel);
       const guide = panel.querySelector(".auto-run-help");
       if (guide) observer.observe(guide);
+      const notice = panel.querySelector(".wiring-notice");
+      if (notice) observer.observe(notice);
     }
     return () => observer.disconnect();
   }, []);
@@ -254,6 +264,25 @@ export function ExamPanel({
           {running ? "■ 試験運転停止" : "▶ 試験運転開始"}
         </button>
       </div>
+      <section
+        className="wiring-pending wiring-notice"
+        hidden={!unmapped.length}
+        role="status"
+        aria-label="盤の未接続番地"
+      >
+        <strong>CSVと盤の割付を確認してください</strong>
+        <p>
+          盤に接続されていない番地: {unmapped.slice(0, 24).join("・")}
+          {unmapped.length > 24 ? ` ほか${unmapped.length - 24}件` : ""}
+          。この番地のスイッチや出力は盤と連動しません。
+        </p>
+        <p>
+          X0/Y20の連番割付は、LS1〜5=X0〜4、PB1〜5=X5〜9、SS1=XA、SS0=XB、DSW=XC〜F、RY1/2=Y20/21、PL1〜4=Y22〜25、DPL=Y26〜2Dです。機器の対応はCSVから確定できないため、実際の割付表と照合してください。適用すると運転を停止し初期化します。
+        </p>
+        <button onClick={() => apply(x0y20Wiring())}>
+          X0/Y20割付を適用・初期化
+        </button>
+      </section>
       <AutoRunHelp
         kind={demoKind}
         plant={plant}
