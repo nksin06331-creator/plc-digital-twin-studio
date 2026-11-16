@@ -43,12 +43,18 @@ export interface ExamWiring {
   outputs: Record<OutputPoint, string>;
 }
 export function defaultWiring(): ExamWiring {
+  return sequentialWiring("X10", "Y30");
+}
+export function x0y20Wiring(): ExamWiring {
+  return sequentialWiring("X0", "Y20");
+}
+function sequentialWiring(inputBase: string, outputBase: string): ExamWiring {
   return {
     inputs: Object.fromEntries(
-      inputPoints.map(([key], i) => [key, offset("X10", i)]),
+      inputPoints.map(([key], i) => [key, offset(inputBase, i)]),
     ) as ExamWiring["inputs"],
     outputs: Object.fromEntries(
-      outputPoints.map(([key], i) => [key, offset("Y30", i)]),
+      outputPoints.map(([key], i) => [key, offset(outputBase, i)]),
     ) as ExamWiring["outputs"],
   };
 }
