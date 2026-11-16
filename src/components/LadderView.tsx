@@ -119,7 +119,10 @@ function Contact({
       <span>{i.operands.join(" ")}</span>
       <Symbol instruction={i} />
       <small>
-        S{i.step} · {i.opcode} · {state}
+        <span className="ladder-detail">
+          S{i.step} · {i.opcode} ·{" "}
+        </span>
+        {state}
       </small>
     </button>
   );
@@ -130,7 +133,7 @@ function commentFor(condition: Logic, output: Instruction) {
   while (node.kind !== "contact") node = node.left;
   return node.instruction.comment;
 }
-const zoomLevels = [80, 100, 125, 150, 200];
+const zoomLevels = [40, 50, 60, 80, 100, 125, 150, 200];
 export function LadderView({
   program,
   trace,
@@ -146,7 +149,7 @@ export function LadderView({
   expanded: boolean;
   onToggleExpanded: () => void;
 }) {
-  const [zoom, setZoom] = useState(100);
+  const [zoom, setZoom] = useState(50);
   const ladder = useMemo(
     () =>
       program.instructions.length > 1000
@@ -170,6 +173,7 @@ export function LadderView({
         </span>
       </div>
       <div className="ladder-controls" aria-label="ラダー表示操作">
+        <button onClick={() => setZoom(50)}>全体表示（50%）</button>
         <button
           aria-label="ラダーを縮小"
           disabled={zoom === zoomLevels[0]}
@@ -220,7 +224,7 @@ export function LadderView({
         <div className="error">{ladder.errors[0]}</div>
       ) : (
         <div
-          className="ladder-canvas"
+          className={"ladder-canvas" + (zoom <= 60 ? " ladder-compact" : "")}
           role="region"
           aria-label="ラダー回路（縦横スクロール）"
           tabIndex={0}
@@ -271,7 +275,10 @@ export function LadderView({
                       <span>{output.operands.join(" ")}</span>
                       <Symbol instruction={output} output />
                       <small>
-                        S{output.step} · {output.opcode} · {state}
+                        <span className="ladder-detail">
+                          S{output.step} · {output.opcode} ·{" "}
+                        </span>
+                        {state}
                       </small>
                     </button>
                     <div className="right-rail" />
