@@ -1,9 +1,10 @@
-import { selectBoard, selectDemo } from "./helpers";
+import { closeMenu, selectBoard, selectDemo } from "./helpers";
 import { test, expect } from "@playwright/test";
 test("push buttons drive holding circuit, lamps, motor and ladder", async ({
   page,
 }) => {
   await page.goto("/");
+  await closeMenu(page);
   await selectBoard(page, "generic");
   await selectDemo(page, "training_demo");
   await expect(page.locator("#ladder .ladder-rung")).toHaveCount(6);
@@ -50,6 +51,7 @@ test("BCD dial controls numeric output and motor conflict is visible", async ({
   page,
 }) => {
   await page.goto("/");
+  await closeMenu(page);
   await selectBoard(page, "generic");
   await selectDemo(page, "training_demo");
   await page
@@ -83,6 +85,7 @@ test("BCD dial controls numeric output and motor conflict is visible", async ({
 });
 test("NC momentary contacts return ON after key release", async ({ page }) => {
   await page.goto("/");
+  await closeMenu(page);
   await selectBoard(page, "generic");
   await selectDemo(page, "training_demo");
   await page
@@ -106,6 +109,7 @@ test("NC momentary contacts return ON after key release", async ({ page }) => {
 test("training panel fits narrow viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
+  await closeMenu(page);
   await selectBoard(page, "generic");
   await selectDemo(page, "training_demo");
   expect(
@@ -121,6 +125,7 @@ test("window blur releases a held input and invalid BCD address does not crash",
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
+  await closeMenu(page);
   await selectBoard(page, "generic");
   await selectDemo(page, "training_demo");
   const start = page.getByRole("button", {

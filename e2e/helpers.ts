@@ -5,11 +5,10 @@ export async function openMenu(page: Page) {
     .click();
 }
 export async function closeMenu(page: Page) {
-  const close = page.getByRole("button", {
-    name: "メニューを閉じる",
-    exact: true,
-  });
-  if (await close.isVisible()) await close.click();
+  await page
+    .getByRole("button", { name: "メニューを開く", exact: true })
+    .waitFor();
+  await page.keyboard.press("Escape");
 }
 export async function selectDemo(page: Page, name: string) {
   await openMenu(page);

@@ -1,8 +1,9 @@
-import { selectBoard, selectDemo } from "./helpers";
+import { closeMenu, selectBoard, selectDemo } from "./helpers";
 import { test, expect } from "@playwright/test";
 async function frozen(page: import("@playwright/test").Page) {
   await page.clock.install({ time: new Date("2026-11-14T00:00:00Z") });
   await page.goto("/");
+  await closeMenu(page);
   await page.clock.pauseAt(new Date("2026-11-14T00:01:00Z"));
 }
 test("resume evaluates a held emergency before any conveyor movement", async ({
@@ -70,6 +71,7 @@ test("edited wiring aliases keep PLC signal and terminal indicators consistent",
   page,
 }) => {
   await page.goto("/");
+  await closeMenu(page);
   await page.locator(".exam-wiring summary").click();
   await page
     .getByRole("textbox", { name: "LS1 PLC割付", exact: true })
@@ -93,6 +95,7 @@ test("invalid address import displays diagnostics and permits another file to lo
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
+  await closeMenu(page);
   const input = page.locator("#import input[type=file]");
   await input.setInputFiles({
     name: "bad.csv",
@@ -122,6 +125,7 @@ test("large lists render only visible pages and cross-reference selection opens 
   page,
 }) => {
   await page.goto("/");
+  await closeMenu(page);
   const lines = [
     "LD,SM400",
     ...Array.from({ length: 300 }, () => "OUT,M0"),
@@ -242,6 +246,7 @@ test("loading the comprehensive demo synchronizes edited and applied wiring", as
   page,
 }) => {
   await page.goto("/");
+  await closeMenu(page);
   await page.locator(".exam-wiring summary").click();
   await page
     .getByRole("textbox", { name: "LS1 PLC割付", exact: true })

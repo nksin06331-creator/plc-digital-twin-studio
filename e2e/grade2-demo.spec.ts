@@ -5,6 +5,7 @@ test("comprehensive demo shows captured pallet number, computed product and comp
 }) => {
   await page.clock.install({ time: new Date("2026-11-14T00:00:00Z") });
   await page.goto("/");
+  await closeMenu(page);
   await page.clock.pauseAt(new Date("2026-11-14T00:01:00Z"));
   await selectDemo(page, "2級対策・総合演習");
   await expect(page.locator(".grade2-guide")).toBeVisible();
@@ -66,6 +67,7 @@ test("comprehensive demo sets its matching panel and wiring and fits mobile widt
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
+  await closeMenu(page);
   await selectBoard(page, "generic");
   await selectDemo(page, "2級対策・総合演習");
   await openMenu(page);
@@ -88,6 +90,7 @@ test("quick pointer clicks start auto and capture emergency/reset without a time
 }) => {
   await page.clock.install({ time: new Date("2026-11-14T00:00:00Z") });
   await page.goto("/");
+  await closeMenu(page);
   await page.clock.pauseAt(new Date("2026-11-14T00:01:00Z"));
   await selectDemo(page, "2級対策・総合演習");
   const status = page.getByRole("status", {

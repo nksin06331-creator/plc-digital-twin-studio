@@ -1,4 +1,4 @@
-import { selectBoard, selectDemo } from "./helpers";
+import { closeMenu, selectBoard, selectDemo } from "./helpers";
 import { test, expect } from "@playwright/test";
 test("sample inputs, scan, continuous run, stop, reset and export", async ({
   page,
@@ -6,6 +6,7 @@ test("sample inputs, scan, continuous run, stop, reset and export", async ({
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
+  await closeMenu(page);
   await selectBoard(page, "generic");
   await selectDemo(page, "training_demo");
   await page.locator(".analysis-tools summary").click();
@@ -40,6 +41,7 @@ test("unknown CSV preview blocks simulation and renders text safely", async ({
   page,
 }) => {
   await page.goto("/");
+  await closeMenu(page);
   await selectBoard(page, "generic");
   await selectDemo(page, "training_demo");
   await page.locator(".analysis-tools summary").click();
@@ -62,6 +64,7 @@ test("MOV sample sets D values and mobile layout stays within viewport", async (
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
+  await closeMenu(page);
   await selectBoard(page, "generic");
   await selectDemo(page, "training_demo");
   await page.locator(".analysis-tools summary").click();
@@ -87,6 +90,7 @@ test("D initial value accepts negative typing without changing memory mid-edit",
   page,
 }) => {
   await page.goto("/");
+  await closeMenu(page);
   await selectBoard(page, "generic");
   await selectDemo(page, "training_demo");
   await page.locator(".analysis-tools summary").click();
@@ -106,6 +110,7 @@ test("D initial value accepts negative typing without changing memory mid-edit",
 
 test("selected step remains selected after scanning", async ({ page }) => {
   await page.goto("/");
+  await closeMenu(page);
   await selectBoard(page, "generic");
   await selectDemo(page, "training_demo");
   await page.locator(".analysis-tools summary").click();
@@ -119,6 +124,7 @@ test("selected step remains selected after scanning", async ({ page }) => {
 
 test("invalid or cancelled D edits preserve memory", async ({ page }) => {
   await page.goto("/");
+  await closeMenu(page);
   await selectBoard(page, "generic");
   await selectDemo(page, "training_demo");
   await page.locator(".analysis-tools summary").click();

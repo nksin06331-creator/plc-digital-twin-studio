@@ -1,9 +1,10 @@
-import { selectDemo } from "./helpers";
+import { closeMenu, selectDemo } from "./helpers";
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 async function frozen(page: import("@playwright/test").Page) {
   await page.clock.install({ time: new Date("2026-11-16T00:00:00Z") });
   await page.goto("/");
+  await closeMenu(page);
   await page.clock.pauseAt(new Date("2026-11-16T00:01:00Z"));
 }
 for (const width of [1366, 390]) {
@@ -114,6 +115,7 @@ test("invalid drafts stay pending; imported assignments apply atomically and cle
 }) => {
   await page.setViewportSize({ width: 390, height: 900 });
   await page.goto("/");
+  await closeMenu(page);
   await page.locator(".exam-wiring summary").click();
   await page
     .getByRole("textbox", { name: "LS1 PLC割付", exact: true })

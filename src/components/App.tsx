@@ -47,6 +47,18 @@ export function App() {
     setMenuOpen(false);
     mainRef.current?.focus({ preventScroll: true });
   }
+  useEffect(() => {
+    if (!menuOpen) return;
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setMenuOpen(false);
+        mainRef.current?.focus({ preventScroll: true });
+      }
+    };
+    window.addEventListener("keydown", escape);
+    return () => window.removeEventListener("keydown", escape);
+  }, [menuOpen]);
   const [activeDemo, setActiveDemo] = useState<string | null>("exam_conveyor");
   const [lastTrace, setLastTrace] = useState<ScanTrace[]>([]);
   const [boardMode, setBoardMode] = useState<"exam" | "generic">("exam");
@@ -278,7 +290,7 @@ export function App() {
                   if (["program", "devices"].includes(id)) {
                     setAnalysisExpanded(true);
                   }
-                  closeMenu();
+                  if (id !== "import") closeMenu();
                 }}
               >
                 {label}

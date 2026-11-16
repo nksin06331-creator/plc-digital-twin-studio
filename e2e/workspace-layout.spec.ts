@@ -1,10 +1,11 @@
 import { test, expect } from "@playwright/test";
-import { selectDemo } from "./helpers";
+import { closeMenu, selectDemo } from "./helpers";
 test("hover menu overlays without moving the parallel workspace and closes with pointer exit or Escape", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/");
+  await closeMenu(page);
   const trigger = page.getByRole("button", {
     name: "メニューを開く",
     exact: true,
@@ -54,6 +55,7 @@ test.describe("touch navigation", () => {
     page,
   }) => {
     await page.goto("/");
+    await closeMenu(page);
     await page
       .getByRole("button", { name: "メニューを開く", exact: true })
       .tap();
