@@ -245,7 +245,7 @@ export function App() {
             ファイルを選択
             <input
               type="file"
-              accept=".csv,text/csv"
+              aria-label="CSV・リストファイルを選択"
               onChange={(e) => {
                 const f = e.target.files?.[0];
                 if (f) void file(f);
@@ -253,6 +253,9 @@ export function App() {
               }}
             />
           </label>
+          <p>
+            拡張子で絞り込みません。選択後に内容を検証します。ZIP内のファイルは先に展開してください。
+          </p>
         </section>
         <label>
           文字コード
