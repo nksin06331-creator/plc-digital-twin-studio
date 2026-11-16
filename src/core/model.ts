@@ -18,27 +18,39 @@ export interface Program {
   encoding: string;
   adapter: string | null;
 }
-export const supported = new Set([
-  "LD",
-  "LDI",
-  "AND",
-  "ANI",
-  "OR",
-  "ORI",
+export const loadInstructions = ["LD", "LDI", "LDP", "LDF"];
+export const andInstructions = ["AND", "ANI", "ANDP", "ANDF"];
+export const orInstructions = ["OR", "ORI", "ORP", "ORF"];
+export const outputInstructions = [
   "OUT",
   "SET",
   "RST",
   "MOV",
+  "MOVP",
+  "BCD",
+  "BIN",
+  "*",
+  "+",
+  "-",
+  "/",
+  "INCP",
+  "INC",
+  "DEC",
+  "PLS",
+  "PLF",
+  "CMP",
+];
+export const supported = new Set([
+  ...loadInstructions,
+  ...andInstructions,
+  ...orInstructions,
+  ...outputInstructions,
   "END",
   "ANB",
   "ORB",
   "MPS",
   "MRD",
   "MPP",
-  "LDP",
-  "INCP",
-  "BCD",
-  "*",
   "LD=",
   "LD>",
   "LD>=",

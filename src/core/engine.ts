@@ -1,4 +1,14 @@
-import { device, supported, unsigned16, signed16, type Program } from "./model";
+import {
+  loadInstructions,
+  andInstructions,
+  orInstructions,
+  outputInstructions,
+  device,
+  supported,
+  unsigned16,
+  signed16,
+  type Program,
+} from "./model";
 import {
   constant,
   group,
@@ -39,14 +49,16 @@ export function validate(p: Program): string[] {
       fail(`未対応命令 ${o}`);
       continue;
     }
-    const load = ["LD", "LDI", "LDP"].includes(o) || cmp?.[1] === "LD";
+    const load = loadInstructions.includes(o) || cmp?.[1] === "LD";
     if (load) {
       if (active && !outputSeen) blocks++;
       if (outputSeen && blocks) fail("結合されていないブロックがあります");
       active = true;
       outputSeen = false;
     } else if (o !== "END" && !active) fail("先行するLD/LDIが必要");
-    if (["LD", "LDI", "LDP", "AND", "ANI", "OR", "ORI"].includes(o)) {
+    if (
+      [...loadInstructions, ...andInstructions, ...orInstructions].includes(o)
+    ) {
       if (a.length !== 1 || !isBit(a[0]))
         fail("接点はX/Y/M/T/CまたはSM400が必要");
     } else if (cmp) {
@@ -81,7 +93,7 @@ export function validate(p: Program): string[] {
         (preset !== null && (preset < 1 || preset > 32767))
       )
         fail("カウンター設定値は1〜32767の16bit値が必要");
-    } else if (["OUT", "SET", "RST"].includes(o)) {
+    } else if (["OUT", "SET", "RST", "PLS", "PLF"].includes(o)) {
       if (
         a.length !== 1 ||
         !(o === "RST" ? ["Y", "M", "C"] : ["Y", "M"]).includes(
@@ -89,10 +101,27 @@ export function validate(p: Program): string[] {
         )
       )
         fail(o === "RST" ? "RST出力先はY/M/Cのみ" : "出力先はY/Mのみ");
-    } else if (["MOV", "BCD"].includes(o)) {
+    } else if (["MOV", "MOVP", "BCD", "BIN"].includes(o)) {
       if (a.length !== 2 || !isWord(a[0]) || !isDestination(a[1]))
         fail("転送元または転送先が不正");
-    } else if (o === "*") {
+    } else if (["+", "-"].includes(o)) {
+      if (
+        a.length !== 3 ||
+        !a.slice(0, 2).every(isWord) ||
+        !isDestination(a[2])
+      )
+        fail("加減算は2つの16bit値と出力先が必要");
+    } else if (o === "CMP") {
+      const dest = device(a[2]);
+      if (
+        a.length !== 3 ||
+        !a.slice(0, 2).every(isWord) ||
+        !dest ||
+        !["Y", "M"].includes(dest.kind) ||
+        !Number.isSafeInteger(dest.address + 2)
+      )
+        fail("CMPは2つの16bit値と連続3点のY/M出力先が必要");
+    } else if (["*", "/"].includes(o)) {
       if (
         a.length !== 3 ||
         !isWord(a[0]) ||
@@ -100,15 +129,15 @@ export function validate(p: Program): string[] {
         device(a[2])?.kind !== "D" ||
         !Number.isSafeInteger((device(a[2])?.address ?? 0) + 1)
       )
-        fail("乗算は2つの値とD出力先が必要");
-    } else if (o === "INCP") {
+        fail("乗除算は2つの値と連続2ワードのD出力先が必要");
+    } else if (["INC", "DEC", "INCP"].includes(o)) {
       if (a.length !== 1 || device(a[0])?.kind !== "D")
-        fail("INCP出力先はDのみ");
+        fail("INC/DEC/INCP出力先はDのみ");
     } else if (o === "END") {
       if (a.length) fail("ENDにオペランドは指定できません");
       ended = true;
     }
-    if (["OUT", "SET", "RST", "MOV", "BCD", "*", "INCP"].includes(o)) {
+    if (outputInstructions.includes(o)) {
       if (blocks) fail("未結合ブロックからの出力");
       outputSeen = true;
     }
@@ -183,10 +212,10 @@ export class PLC {
           memory[offset(g.start.name, j)] = (unsigned16(value) >> j) & 1;
       } else memory[device(s)!.name] = unsigned16(value);
     };
-    const pulse = (step: number, condition: boolean) => {
-      const rising = condition && !this.edges[step];
+    const pulse = (step: number, condition: boolean, falling = false) => {
+      const previous = !!this.edges[step];
       edges[step] = condition;
-      return rising;
+      return falling ? previous && !condition : condition && !previous;
     };
     let acc = false,
       outputSeen = false;
@@ -198,7 +227,7 @@ export class PLC {
         o = i.opcode,
         cmp = comparison.exec(o);
       let contact: boolean | undefined;
-      const load = ["LD", "LDI", "LDP"].includes(o) || cmp?.[1] === "LD";
+      const load = loadInstructions.includes(o) || cmp?.[1] === "LD";
       if (load) {
         if (!outputSeen && trace.length) blocks.push(acc);
         outputSeen = false;
@@ -229,6 +258,11 @@ export class PLC {
           case "LD":
           case "LDI":
           case "LDP":
+          case "LDF":
+          case "ANDP":
+          case "ANDF":
+          case "ORP":
+          case "ORF":
           case "AND":
           case "ANI":
           case "OR":
@@ -236,10 +270,11 @@ export class PLC {
             const d = device(a);
             contact = d?.kind === "C" ? !!memory[d.name] : !!read(a);
             if (["LDI", "ANI", "ORI"].includes(o)) contact = !contact;
-            if (o === "LDP") contact = pulse(i.step, contact);
-            acc = ["LD", "LDI", "LDP"].includes(o)
+            if (["LDP", "LDF", "ANDP", "ANDF", "ORP", "ORF"].includes(o))
+              contact = pulse(i.step, contact, o.endsWith("F"));
+            acc = loadInstructions.includes(o)
               ? contact
-              : ["AND", "ANI"].includes(o)
+              : andInstructions.includes(o)
                 ? acc && contact
                 : acc || contact;
             break;
@@ -299,6 +334,52 @@ export class PLC {
           case "MOV":
             if (acc) write(b, read(a));
             break;
+          case "MOVP":
+            if (pulse(i.step, acc)) write(b, read(a));
+            break;
+          case "PLS":
+          case "PLF":
+            write(a, pulse(i.step, acc, o === "PLF") ? 1 : 0);
+            break;
+          case "INC":
+          case "DEC":
+            if (acc) write(a, read(a) + (o === "INC" ? 1 : -1));
+            break;
+          case "+":
+          case "-":
+            if (acc)
+              write(c, o === "+" ? read(a) + read(b) : read(a) - read(b));
+            break;
+          case "/":
+            if (acc) {
+              const dividend = signed16(read(a)),
+                divisor = signed16(read(b));
+              if (!divisor) throw Error(`ステップ ${i.step}: ゼロ除算です`);
+              write(c, Math.trunc(dividend / divisor));
+              write(offset(c, 1), dividend % divisor);
+            }
+            break;
+          case "CMP":
+            if (acc) {
+              const x = signed16(read(a)),
+                y = signed16(read(b));
+              for (const [n, value] of [x > y, x === y, x < y].entries())
+                write(offset(c, n), value ? 1 : 0);
+            }
+            break;
+          case "BIN":
+            if (acc) {
+              const packed = read(a);
+              let value = 0;
+              for (let n = 0; n < 4; n++) {
+                const digit = (packed >> (4 * n)) & 15;
+                if (digit > 9)
+                  throw Error(`ステップ ${i.step}: BIN入力が不正なBCD値です`);
+                value += digit * 10 ** n;
+              }
+              write(b, value);
+            }
+            break;
           case "*":
             if (acc) {
               const n = signed16(read(a)) * signed16(read(b));
@@ -319,8 +400,7 @@ export class PLC {
             break;
         }
       trace.push({ step: i.step, result: acc, contact });
-      if (["OUT", "SET", "RST", "MOV", "BCD", "*", "INCP"].includes(o))
-        outputSeen = true;
+      if (outputInstructions.includes(o)) outputSeen = true;
       if (o === "END") break;
     }
     this.memory = memory;

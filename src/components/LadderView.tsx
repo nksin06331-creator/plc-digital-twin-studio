@@ -31,7 +31,12 @@ function Symbol({
         <>
           <path d="M0 20H42 M74 20H116 M42 5V35 M74 5V35" />
           {["LDI", "ANI", "ORI"].includes(o) && <path d="M46 31L70 9" />}
-          {o === "LDP" && <path d="M58 31V9 M52 15L58 9L64 15" />}
+          {["LDP", "ANDP", "ORP"].includes(o) && (
+            <path d="M58 31V9 M52 15L58 9L64 15" />
+          )}
+          {["LDF", "ANDF", "ORF"].includes(o) && (
+            <path d="M58 9V31 M52 25L58 31L64 25" />
+          )}
         </>
       ) : coil ? (
         <>

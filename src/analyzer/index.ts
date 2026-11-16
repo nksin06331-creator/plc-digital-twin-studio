@@ -1,5 +1,8 @@
 import {
   device,
+  loadInstructions,
+  andInstructions,
+  orInstructions,
   type Instruction,
   type Program,
   type Diagnostic,
@@ -30,20 +33,27 @@ export function analyze(p: Program) {
       if (!d) return;
       let access: Reference["access"] = "unknown";
       if (
-        ["LD", "LDI", "LDP", "AND", "ANI", "OR", "ORI"].includes(i.opcode) ||
+        [...loadInstructions, ...andInstructions, ...orInstructions].includes(
+          i.opcode,
+        ) ||
         comparison.test(i.opcode)
       )
         access = "read";
-      if (["OUT", "SET", "RST", "INCP"].includes(i.opcode))
+      if (
+        ["OUT", "SET", "RST", "INCP", "INC", "DEC", "PLS", "PLF"].includes(
+          i.opcode,
+        )
+      )
         access = index === 0 ? "write" : "read";
       if (
-        i.opcode === "INCP" ||
+        ["INCP", "INC", "DEC"].includes(i.opcode) ||
         (i.opcode === "OUT" && index === 0 && d.kind === "C")
       )
         access = "read/write";
-      if (["MOV", "BCD"].includes(i.opcode))
+      if (["MOV", "MOVP", "BCD", "BIN"].includes(i.opcode))
         access = index === 1 ? "write" : "read";
-      if (i.opcode === "*") access = index === 2 ? "write" : "read";
+      if (["*", "/", "+", "-", "CMP"].includes(i.opcode))
+        access = index === 2 ? "write" : "read";
       if (i.opcode === "BMOV") {
         access = index === 1 ? "write" : "read";
         ranges.push({
@@ -55,7 +65,13 @@ export function analyze(p: Program) {
           access,
         });
       }
-      const count = g?.count ?? (i.opcode === "*" && index === 2 ? 2 : 1);
+      const count =
+        g?.count ??
+        (["*", "/", "CMP"].includes(i.opcode) && index === 2
+          ? i.opcode === "CMP"
+            ? 3
+            : 2
+          : 1);
       if (g || count > 1)
         ranges.push({ instruction: i, start: d.name, count, access });
       const validEnd = Number.isSafeInteger(d.address + (count - 1));
