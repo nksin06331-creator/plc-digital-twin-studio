@@ -8,6 +8,8 @@ export async function closeMenu(page: Page) {
   await page
     .getByRole("button", { name: "メニューを開く", exact: true })
     .waitFor();
+  // Leave the hover target before closing so the next hover is a real re-entry.
+  await page.mouse.move((page.viewportSize()?.width ?? 1280) - 8, 8);
   await page.keyboard.press("Escape");
 }
 export async function selectDemo(page: Page, name: string) {
