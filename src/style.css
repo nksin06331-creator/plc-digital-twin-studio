@@ -1789,3 +1789,64 @@ td:last-child {
 .paged-list {
   min-width: 0;
 }
+
+.current-program {
+  position: sticky;
+  top: 8px;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 20px;
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  border: 1px solid #387e79;
+  border-left: 4px solid #58d8bc;
+  border-radius: 7px;
+  background: #122631;
+  box-shadow: 0 4px 16px #0006;
+}
+.current-program-name {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+.current-program-name > span {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 11px;
+  color: #b2c8d6;
+}
+.current-program-name strong {
+  display: block;
+  max-height: 4.8em;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  font-size: 16px;
+  color: #f0fff9;
+}
+.current-program-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  font-size: 11px;
+}
+.current-program-meta .error {
+  margin: 0;
+}
+.program-source {
+  border: 1px solid #527b8b;
+  padding: 3px 7px;
+  border-radius: 4px;
+  color: #d7e9f4;
+}
+aside > button[aria-pressed="true"] {
+  border-color: #58d8bc;
+  background: #173e43;
+  color: #b2ffeb;
+  box-shadow: inset 3px 0 #58d8bc;
+}
+main [id] {
+  scroll-margin-top: 160px;
+}
