@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { parseBytes, parseText, MAX_BYTES } from "../parser";
 import { PLC, validate, type ScanTrace } from "../core/engine";
 import { signed16, device } from "../core/model";
@@ -43,6 +50,33 @@ export function App() {
   const [ladderExpanded, setLadderExpanded] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
+  const workbenchRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const main = mainRef.current,
+      workbench = workbenchRef.current;
+    if (!main || !workbench) return;
+    const fit = () => {
+      const height = Math.max(
+        120,
+        window.innerHeight - main.offsetTop - workbench.offsetTop - 12,
+      );
+      const value = `${height}px`;
+      if (workbench.style.getPropertyValue("--workbench-height") !== value)
+        workbench.style.setProperty("--workbench-height", value);
+    };
+    const observer = new ResizeObserver(fit);
+    main
+      .querySelectorAll(
+        ":scope > .current-program, :scope > .metrics, :scope > .toolbar, :scope > .notice",
+      )
+      .forEach((element) => observer.observe(element));
+    window.addEventListener("resize", fit);
+    fit();
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", fit);
+    };
+  }, []);
   function closeMenu() {
     setMenuOpen(false);
     mainRef.current?.focus({ preventScroll: true });
@@ -63,13 +97,19 @@ export function App() {
   const [lastTrace, setLastTrace] = useState<ScanTrace[]>([]);
   const [boardMode, setBoardMode] = useState<"exam" | "generic">("exam");
   const [wiring, setWiring] = useState<ExamWiring>(defaultWiring);
+  const simulationConfig = useRef({ boardMode, wiring });
+  useLayoutEffect(() => {
+    simulationConfig.current = { boardMode, wiring };
+  }, [boardMode, wiring]);
   const plant = useRef(new ExamPlant());
   const plc = useRef(new PLC());
   function resetSimulation() {
     plc.current.reset();
     plant.current.reset();
-    if (boardMode === "exam")
-      plc.current.inputs = plant.current.inputImage(wiring);
+    // Async file reads may finish after the user switches the panel or wiring.
+    const current = simulationConfig.current;
+    if (current.boardMode === "exam")
+      plc.current.inputs = plant.current.inputImage(current.wiring);
     setLastTrace([]);
   }
   useEffect(() => {
@@ -225,6 +265,26 @@ export function App() {
     <div className="studio" data-revision={revision}>
       <div
         className="sidebar-shell"
+        onDragEnter={(e) => {
+          if (e.dataTransfer.types.includes("Files")) {
+            e.preventDefault();
+            setMenuOpen(true);
+          }
+        }}
+        onDragOver={(e) => {
+          if (e.dataTransfer.types.includes("Files")) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "copy";
+            setMenuOpen(true);
+          }
+        }}
+        onDrop={(e) => {
+          const dropped = e.dataTransfer.files[0];
+          if (dropped) {
+            e.preventDefault();
+            void file(dropped);
+          }
+        }}
         onPointerEnter={(e) => {
           if (e.pointerType === "mouse") setMenuOpen(true);
         }}
@@ -301,11 +361,6 @@ export function App() {
             id="import"
             className="drop"
             onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              e.preventDefault();
-              const f = e.dataTransfer.files[0];
-              if (f) void file(f);
-            }}
           >
             <strong>CSVをドロップ</strong>
             <p>端末内で解析 · 最大2 MiB</p>
@@ -477,6 +532,7 @@ export function App() {
           教育用の簡易モデルです。実機との完全一致を保証しません。実設備の検証・制御には使用しないでください。
         </p>
         <div
+          ref={workbenchRef}
           className={
             "live-workbench" + (ladderExpanded ? " ladder-expanded" : "")
           }

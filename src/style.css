@@ -2185,12 +2185,13 @@ main [id] {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 10px;
   align-items: stretch;
-  height: max(360px, calc(100dvh - 190px));
+  height: var(--workbench-height, max(360px, calc(100dvh - 190px)));
 }
 .studio .live-workbench.ladder-expanded {
   grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
 }
 .studio .live-workbench > .panel {
+  margin: 0;
   height: 100%;
   max-height: none;
   min-width: 0;
@@ -2247,7 +2248,7 @@ main [id] {
   }
   .studio .live-workbench {
     gap: 5px;
-    height: max(360px, calc(100dvh - 250px));
+    height: var(--workbench-height, max(360px, calc(100dvh - 250px)));
   }
   .studio .live-workbench > .panel {
     padding: 6px;

@@ -127,11 +127,17 @@ export function ExamPanel({
         160,
         panel.clientHeight - target.offsetTop - 16,
       );
-      const scale = Math.min(
-        1,
-        target.clientWidth / 700,
-        availableHeight / Math.max(1, stage.offsetHeight),
-      );
+      // Zoom rounds text metrics, so sub-percent adjustments can alternate
+      // between two line layouts forever. Round down to stable 1% steps.
+      const scale =
+        Math.floor(
+          100 *
+            Math.min(
+              1,
+              target.clientWidth / 700,
+              availableHeight / Math.max(1, stage.offsetHeight),
+            ),
+        ) / 100;
       setStageScale((previous) =>
         Math.abs(previous - scale) < 0.002 ? previous : scale,
       );
