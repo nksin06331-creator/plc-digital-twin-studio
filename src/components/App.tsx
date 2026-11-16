@@ -45,11 +45,17 @@ export function App() {
     [logs, setLogs] = useState<string[]>([]),
     [extra, setExtra] = useState<string[]>([]),
     [newDevice, setNewDevice] = useState("M0");
+  const [programUpdate, setProgramUpdate] = useState(0);
+  const [importStatus, setImportStatus] = useState<{
+    state: "reading" | "success" | "error";
+    message: string;
+  } | null>(null);
   const [showGrade2Guide, setShowGrade2Guide] = useState(false);
   const [analysisExpanded, setAnalysisExpanded] = useState(false);
   const [ladderExpanded, setLadderExpanded] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const workbenchRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const main = mainRef.current,
@@ -192,7 +198,8 @@ export function App() {
     return () => window.clearInterval(id);
   }, [running, scan]);
   function load(text: string, name: string) {
-    loadVersion.current++;
+    setProgramUpdate(++loadVersion.current);
+    setImportStatus(null);
     setRunning(false);
     setProgram(parseText(text));
     setFilename(name);
@@ -217,14 +224,30 @@ export function App() {
     const version = ++loadVersion.current;
     setRunning(false);
     if (f.size > MAX_BYTES) {
+      setImportStatus({
+        state: "error",
+        message: `${f.name}: ファイル上限は2 MiBです。表示中の回路は変更していません。`,
+      });
       log("ファイル上限は2 MiBです");
       return;
     }
+    setImportStatus({
+      state: "reading",
+      message: `${f.name} を読込中です。表示中は直前の回路です。`,
+    });
     try {
       const p = parseBytes(new Uint8Array(await f.arrayBuffer()), encoding);
       if (version !== loadVersion.current) return;
       setRunning(false);
       setProgram(p);
+      setProgramUpdate(version);
+      const issues = validate(p);
+      setImportStatus({
+        state: issues.length ? "error" : "success",
+        message: issues.length
+          ? `${f.name}: 解析に問題があります。${issues[0]}`
+          : `${f.name} の読込完了・${p.instructions.length}命令に表示を更新しました。`,
+      });
       if (!p.adapter) setAnalysisExpanded(true);
       setFilename(f.name);
       setShowGrade2Guide(false);
@@ -236,6 +259,11 @@ export function App() {
       setExtra([]);
       closeMenu();
     } catch (e) {
+      if (version !== loadVersion.current) return;
+      setImportStatus({
+        state: "error",
+        message: `${f.name}: 読込失敗。${(e as Error).message} 表示中の回路は変更していません。`,
+      });
       log((e as Error).message);
     }
   }
@@ -262,7 +290,23 @@ export function App() {
     [names],
   );
   return (
-    <div className="studio" data-revision={revision}>
+    <div
+      className="studio"
+      data-revision={revision}
+      onDragOver={(e) => {
+        if (e.dataTransfer.types.includes("Files")) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "copy";
+        }
+      }}
+      onDrop={(e) => {
+        const dropped = e.dataTransfer.files[0];
+        if (dropped) {
+          e.preventDefault();
+          void file(dropped);
+        }
+      }}
+    >
       <div
         className="sidebar-shell"
         onDragEnter={(e) => {
@@ -276,13 +320,6 @@ export function App() {
             e.preventDefault();
             e.dataTransfer.dropEffect = "copy";
             setMenuOpen(true);
-          }
-        }}
-        onDrop={(e) => {
-          const dropped = e.dataTransfer.files[0];
-          if (dropped) {
-            e.preventDefault();
-            void file(dropped);
           }
         }}
         onPointerEnter={(e) => {
@@ -368,6 +405,7 @@ export function App() {
               ファイルを選択
               <input
                 type="file"
+                ref={fileInputRef}
                 aria-label="CSV・リストファイルを選択"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
@@ -458,6 +496,12 @@ export function App() {
             <span>現在のプログラム</span>
             <strong>{filename}</strong>
           </div>
+          <button
+            className="quick-import"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            CSVを読み込む
+          </button>
           <div className="current-program-meta">
             <span className="program-source">
               {activeDemo ? "デモ回路" : "選択したファイル"}
@@ -470,6 +514,15 @@ export function App() {
               {errors.length ? "実行不可・診断を確認" : "読込済み"}
             </span>
           </div>
+          {importStatus && (
+            <p
+              className={"import-status " + importStatus.state}
+              role="status"
+              aria-label="ファイル読込結果"
+            >
+              {importStatus.message}
+            </p>
+          )}
         </section>
         <header>
           <div>
@@ -538,6 +591,8 @@ export function App() {
           }
         >
           <LadderView
+            filename={filename}
+            update={programUpdate}
             program={program}
             trace={lastTrace}
             selected={selected}

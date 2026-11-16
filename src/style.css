@@ -2283,3 +2283,27 @@ main [id] {
 .studio .exam-stage {
   margin-inline: auto;
 }
+
+.import-status {
+  flex-basis: 100%;
+  margin: 4px 0 0;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.import-status.success {
+  color: #82e7b5;
+}
+.import-status.error {
+  color: #ffabab;
+}
+.ladder-program {
+  margin: 2px 0 6px;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+  color: #b9cedf;
+}
+
+.quick-import {
+  font-size: 11px;
+  padding: 5px 8px;
+}
