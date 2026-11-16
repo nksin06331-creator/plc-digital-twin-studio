@@ -98,7 +98,7 @@ test("invalid address import displays diagnostics and permits another file to lo
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
-  const input = page.locator('input[type=file][accept=".csv,text/csv"]');
+  const input = page.locator("#import input[type=file]");
   await input.setInputFiles({
     name: "bad.csv",
     mimeType: "text/csv",
@@ -132,7 +132,7 @@ test("large lists render only visible pages and cross-reference selection opens 
     ...Array.from({ length: 300 }, () => "OUT,M0"),
     "END,",
   ];
-  await page.locator('input[type=file][accept=".csv,text/csv"]').setInputFiles({
+  await page.locator("#import input[type=file]").setInputFiles({
     name: "many.csv",
     mimeType: "text/csv",
     buffer: Buffer.from(
@@ -178,7 +178,7 @@ test("generic BCD changes are sampled atomically rather than as intermediate bit
   await page
     .getByRole("combobox", { name: "盤モデル", exact: true })
     .selectOption("generic");
-  await page.locator('input[type=file][accept=".csv,text/csv"]').setInputFiles({
+  await page.locator("#import input[type=file]").setInputFiles({
     name: "atomic.csv",
     mimeType: "text/csv",
     buffer: Buffer.from(
@@ -282,7 +282,7 @@ test("manual stepping advances a timer by one interval and rolls back failed mov
   page,
 }) => {
   await frozen(page);
-  const upload = page.locator('input[type=file][accept=".csv,text/csv"]');
+  const upload = page.locator("#import input[type=file]");
   await upload.setInputFiles({
     name: "step-timer.csv",
     mimeType: "text/csv",

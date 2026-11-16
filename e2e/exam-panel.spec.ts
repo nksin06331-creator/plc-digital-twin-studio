@@ -170,7 +170,7 @@ test("interlocked relay commands warn and do not move the pallet", async ({
   await page.clock.install({ time: new Date("2026-11-14T00:00:00Z") });
   await page.goto("/");
   await page.clock.pauseAt(new Date("2026-11-14T00:01:00Z"));
-  await page.locator('input[type=file][accept=".csv,text/csv"]').setInputFiles({
+  await page.locator("#import input[type=file]").setInputFiles({
     name: "interlock.csv",
     mimeType: "text/csv",
     buffer: Buffer.from(
