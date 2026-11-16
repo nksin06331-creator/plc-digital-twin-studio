@@ -292,6 +292,7 @@ export function App() {
         {Object.keys(samples).map((s) => (
           <button
             key={s}
+            aria-pressed={activeDemo === s}
             title={
               s === "grade2_comprehensive"
                 ? "試験盤・標準割付・右端・番号7・DSW2へ初期化"
@@ -313,6 +314,28 @@ export function App() {
         </p>
       </aside>
       <main>
+        <section
+          className="current-program"
+          aria-label="現在のプログラム"
+          aria-live="polite"
+        >
+          <div className="current-program-name">
+            <span>現在のプログラム</span>
+            <strong>{filename}</strong>
+          </div>
+          <div className="current-program-meta">
+            <span className="program-source">
+              {activeDemo ? "デモ回路" : "選択したファイル"}
+            </span>
+            {activeDemo === "grade2_comprehensive" && (
+              <span>2級対策・総合演習</span>
+            )}
+            <span>{program.instructions.length}命令</span>
+            <span className={errors.length ? "error" : "on"}>
+              {errors.length ? "実行不可・診断を確認" : "読込済み"}
+            </span>
+          </div>
+        </section>
         <header>
           <div>
             <p className="caption">PROGRAM ANALYSIS & SCAN SIMULATION</p>
