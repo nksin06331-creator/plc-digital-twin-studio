@@ -1,16 +1,16 @@
+import { closeMenu, selectBoard, selectDemo } from "./helpers";
 import { test, expect } from "@playwright/test";
 async function frozen(page: import("@playwright/test").Page) {
   await page.clock.install({ time: new Date("2026-11-14T00:00:00Z") });
   await page.goto("/");
+  await closeMenu(page);
   await page.clock.pauseAt(new Date("2026-11-14T00:01:00Z"));
 }
 test("resume evaluates a held emergency before any conveyor movement", async ({
   page,
 }) => {
   await frozen(page);
-  await page
-    .getByRole("button", { name: "2級対策・総合演習", exact: true })
-    .click();
+  await selectDemo(page, "2級対策・総合演習");
   await page
     .getByRole("button", { name: "▶ 試験運転開始", exact: true })
     .click();
@@ -49,12 +49,8 @@ test("generic momentary quick clicks latch the training circuit without a period
   page,
 }) => {
   await frozen(page);
-  await page
-    .getByRole("combobox", { name: "盤モデル", exact: true })
-    .selectOption("generic");
-  await page
-    .getByRole("button", { name: "training_demo", exact: true })
-    .click();
+  await selectBoard(page, "generic");
+  await selectDemo(page, "training_demo");
   await page
     .getByRole("button", { name: "▶ 試験運転開始", exact: true })
     .click();
@@ -75,6 +71,7 @@ test("edited wiring aliases keep PLC signal and terminal indicators consistent",
   page,
 }) => {
   await page.goto("/");
+  await closeMenu(page);
   await page.locator(".exam-wiring summary").click();
   await page
     .getByRole("textbox", { name: "LS1 PLC割付", exact: true })
@@ -98,6 +95,7 @@ test("invalid address import displays diagnostics and permits another file to lo
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
+  await closeMenu(page);
   const input = page.locator("#import input[type=file]");
   await input.setInputFiles({
     name: "bad.csv",
@@ -127,6 +125,7 @@ test("large lists render only visible pages and cross-reference selection opens 
   page,
 }) => {
   await page.goto("/");
+  await closeMenu(page);
   const lines = [
     "LD,SM400",
     ...Array.from({ length: 300 }, () => "OUT,M0"),
@@ -175,9 +174,7 @@ test("generic BCD changes are sampled atomically rather than as intermediate bit
   page,
 }) => {
   await frozen(page);
-  await page
-    .getByRole("combobox", { name: "盤モデル", exact: true })
-    .selectOption("generic");
+  await selectBoard(page, "generic");
   await page.locator("#import input[type=file]").setInputFiles({
     name: "atomic.csv",
     mimeType: "text/csv",
@@ -210,9 +207,7 @@ test("single step samples a held emergency before moving and executes once", asy
   page,
 }) => {
   await frozen(page);
-  await page
-    .getByRole("button", { name: "2級対策・総合演習", exact: true })
-    .click();
+  await selectDemo(page, "2級対策・総合演習");
   await page
     .getByRole("button", { name: "▶ 試験運転開始", exact: true })
     .click();
@@ -251,6 +246,7 @@ test("loading the comprehensive demo synchronizes edited and applied wiring", as
   page,
 }) => {
   await page.goto("/");
+  await closeMenu(page);
   await page.locator(".exam-wiring summary").click();
   await page
     .getByRole("textbox", { name: "LS1 PLC割付", exact: true })
@@ -261,9 +257,7 @@ test("loading the comprehensive demo synchronizes edited and applied wiring", as
   await expect(page.locator('.terminal-cell b[title="LS1 → X20"]')).toHaveClass(
     /terminal-active/,
   );
-  await page
-    .getByRole("button", { name: "2級対策・総合演習", exact: true })
-    .click();
+  await selectDemo(page, "2級対策・総合演習");
   await expect(
     page.getByRole("textbox", { name: "LS1 PLC割付", exact: true }),
   ).toHaveValue("X10");

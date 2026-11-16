@@ -1,3 +1,4 @@
+import { openMenu, closeMenu } from "./helpers";
 import { test, expect } from "@playwright/test";
 test("fixed exam layout and physical inputs operate conveyor and limit switches", async ({
   page,
@@ -5,9 +6,12 @@ test("fixed exam layout and physical inputs operate conveyor and limit switches"
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
+  await closeMenu(page);
+  await openMenu(page);
   await expect(
     page.getByRole("combobox", { name: "盤モデル", exact: true }),
   ).toHaveValue("exam");
+  await closeMenu(page);
   await expect(page.locator(".exam-operators .exam-push")).toHaveCount(5);
   await expect(page.locator(".pilot-lamp")).toHaveCount(5);
   await expect(page.locator(".limit-sensor")).toHaveCount(5);
@@ -61,6 +65,7 @@ test("automatic cycle returns to the right end and NC emergency stops motion", a
 }) => {
   await page.clock.install({ time: new Date("2026-11-14T00:00:00Z") });
   await page.goto("/");
+  await closeMenu(page);
   await page.clock.pauseAt(new Date("2026-11-14T00:01:00Z"));
   await page
     .getByRole("combobox", { name: "搬送片道時間", exact: true })
@@ -117,6 +122,7 @@ test("wiring validation preserves current mapping; mobile uses local horizontal 
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
+  await closeMenu(page);
   await page.locator(".exam-wiring summary").click();
   await page
     .getByRole("textbox", { name: "LS1 PLC割付", exact: true })
@@ -139,6 +145,7 @@ test("valid wiring applies atomically, exports and imports without changing it s
   page,
 }) => {
   await page.goto("/");
+  await closeMenu(page);
   await page.locator(".exam-wiring summary").click();
   await page
     .getByRole("textbox", { name: "LS1 PLC割付", exact: true })
@@ -169,6 +176,7 @@ test("interlocked relay commands warn and do not move the pallet", async ({
 }) => {
   await page.clock.install({ time: new Date("2026-11-14T00:00:00Z") });
   await page.goto("/");
+  await closeMenu(page);
   await page.clock.pauseAt(new Date("2026-11-14T00:01:00Z"));
   await page.locator("#import input[type=file]").setInputFiles({
     name: "interlock.csv",
@@ -198,6 +206,7 @@ test("pallet bolts toggle individually, synchronize the selector and drive left-
   page,
 }) => {
   await page.goto("/");
+  await closeMenu(page);
   const upper = page.getByRole("button", {
     name: "ネジ LS5（重み4）",
     exact: true,
@@ -258,6 +267,7 @@ test("DSW plus and minus controls wrap decimal digits and drive BCD inputs and d
   page,
 }) => {
   await page.goto("/");
+  await closeMenu(page);
   const digit = page.getByRole("combobox", {
     name: "DSW デジタルスイッチ",
     exact: true,

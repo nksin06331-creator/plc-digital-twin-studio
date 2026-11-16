@@ -113,6 +113,37 @@ export function ExamPanel({
       .length +
     outputPoints.filter(([key]) => draft.outputs[key] !== wiring.outputs[key])
       .length;
+  const stageRef = useRef<HTMLDivElement>(null);
+  const [stageScale, setStageScale] = useState(1);
+  const [fitBoard, setFitBoard] = useState(true);
+  useEffect(() => {
+    const target = stageRef.current;
+    if (!target) return;
+    const panel = target.closest("#board") as HTMLElement | null;
+    const observer = new ResizeObserver(() => {
+      const stage = target.firstElementChild as HTMLElement | null;
+      if (!stage || !panel || target.clientWidth <= 0) return;
+      const availableHeight = Math.max(
+        160,
+        panel.clientHeight - target.offsetTop - 16,
+      );
+      const scale = Math.min(
+        1,
+        target.clientWidth / 700,
+        availableHeight / Math.max(1, stage.offsetHeight),
+      );
+      setStageScale((previous) =>
+        Math.abs(previous - scale) < 0.002 ? previous : scale,
+      );
+    });
+    observer.observe(target);
+    if (panel) {
+      observer.observe(panel);
+      const guide = panel.querySelector(".auto-run-help");
+      if (guide) observer.observe(guide);
+    }
+    return () => observer.disconnect();
+  }, []);
   const controls = useRef(onOperate);
   controls.current = onOperate;
   useEffect(() => {
@@ -231,8 +262,21 @@ export function ExamPanel({
       <p className="exam-reference">
         2019年2級器具配置図・FA-T-P01公開資料に基づく2Dモデル
       </p>
-      <div className="exam-stage-scroll">
-        <div className="exam-stage">
+      <div className="board-view-controls">
+        <button aria-pressed={!fitBoard} onClick={() => setFitBoard((v) => !v)}>
+          {fitBoard ? "盤を100%で表示" : "盤を枠に合わせる"}
+        </button>
+      </div>
+      <div className="exam-stage-scroll" ref={stageRef}>
+        <div
+          className="exam-stage"
+          style={{
+            zoom: fitBoard ? stageScale : 1,
+            width: 700,
+            minWidth: 700,
+            maxWidth: "none",
+          }}
+        >
           <i className="mounting-screw screw-tl" />
           <i className="mounting-screw screw-tr" />
           <i className="mounting-screw screw-bl" />

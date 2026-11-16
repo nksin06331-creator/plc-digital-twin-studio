@@ -1,3 +1,4 @@
+import { closeMenu, openMenu } from "./helpers";
 import { test, expect } from "@playwright/test";
 
 for (const width of [1366, 390]) {
@@ -6,6 +7,7 @@ for (const width of [1366, 390]) {
   }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/");
+    await closeMenu(page);
     const rows = [
       [
         "ステップ番号",
@@ -24,6 +26,11 @@ for (const width of [1366, 390]) {
       .map((r) => r.map((s) => `"${s}"`).join("\t"))
       .join("\r\n");
     const chooser = page.waitForEvent("filechooser");
+    await openMenu(page);
+    await page
+      .getByRole("link", { name: "01 ファイル読込", exact: true })
+      .click();
+    await expect(page.locator("#studio-menu")).toBeVisible();
     await page.locator("#import .file").click();
     await (
       await chooser

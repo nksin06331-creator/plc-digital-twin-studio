@@ -1,0 +1,26 @@
+import type { Page } from "@playwright/test";
+export async function openMenu(page: Page) {
+  await page
+    .getByRole("button", { name: "メニューを開く", exact: true })
+    .click();
+}
+export async function closeMenu(page: Page) {
+  await page
+    .getByRole("button", { name: "メニューを開く", exact: true })
+    .waitFor();
+  // Leave the hover target before closing so the next hover is a real re-entry.
+  await page.mouse.move((page.viewportSize()?.width ?? 1280) - 8, 8);
+  await page.keyboard.press("Escape");
+}
+export async function selectDemo(page: Page, name: string) {
+  await openMenu(page);
+  await page.getByRole("button", { name, exact: true }).click();
+  await closeMenu(page);
+}
+export async function selectBoard(page: Page, mode: string) {
+  await openMenu(page);
+  await page
+    .getByRole("combobox", { name: "盤モデル", exact: true })
+    .selectOption(mode);
+  await closeMenu(page);
+}

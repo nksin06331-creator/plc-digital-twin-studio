@@ -1,3 +1,4 @@
+import { closeMenu, selectBoard, selectDemo } from "./helpers";
 import { test, expect } from "@playwright/test";
 test("sample inputs, scan, continuous run, stop, reset and export", async ({
   page,
@@ -5,14 +6,11 @@ test("sample inputs, scan, continuous run, stop, reset and export", async ({
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
-  await page
-    .getByRole("combobox", { name: "盤モデル", exact: true })
-    .selectOption("generic");
-  await page
-    .getByRole("button", { name: "training_demo", exact: true })
-    .click();
+  await closeMenu(page);
+  await selectBoard(page, "generic");
+  await selectDemo(page, "training_demo");
   await page.locator(".analysis-tools summary").click();
-  await page.getByRole("button", { name: "basic_and", exact: true }).click();
+  await selectDemo(page, "basic_and");
   const x0 = page
     .locator(".device")
     .filter({ has: page.getByText("X0", { exact: true }) });
@@ -43,14 +41,11 @@ test("unknown CSV preview blocks simulation and renders text safely", async ({
   page,
 }) => {
   await page.goto("/");
-  await page
-    .getByRole("combobox", { name: "盤モデル", exact: true })
-    .selectOption("generic");
-  await page
-    .getByRole("button", { name: "training_demo", exact: true })
-    .click();
+  await closeMenu(page);
+  await selectBoard(page, "generic");
+  await selectDemo(page, "training_demo");
   await page.locator(".analysis-tools summary").click();
-  await page.getByRole("button", { name: "basic_and", exact: true }).click();
+  await selectDemo(page, "basic_and");
   await page.locator("input[type=file]").setInputFiles({
     name: "unknown.csv",
     mimeType: "text/csv",
@@ -69,15 +64,12 @@ test("MOV sample sets D values and mobile layout stays within viewport", async (
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await page
-    .getByRole("combobox", { name: "盤モデル", exact: true })
-    .selectOption("generic");
-  await page
-    .getByRole("button", { name: "training_demo", exact: true })
-    .click();
+  await closeMenu(page);
+  await selectBoard(page, "generic");
+  await selectDemo(page, "training_demo");
   await page.locator(".analysis-tools summary").click();
-  await page.getByRole("button", { name: "basic_and", exact: true }).click();
-  await page.getByRole("button", { name: "mov_example", exact: true }).click();
+  await selectDemo(page, "basic_and");
+  await selectDemo(page, "mov_example");
   await page
     .locator(".device")
     .filter({ has: page.getByText("X0", { exact: true }) })
@@ -98,15 +90,12 @@ test("D initial value accepts negative typing without changing memory mid-edit",
   page,
 }) => {
   await page.goto("/");
-  await page
-    .getByRole("combobox", { name: "盤モデル", exact: true })
-    .selectOption("generic");
-  await page
-    .getByRole("button", { name: "training_demo", exact: true })
-    .click();
+  await closeMenu(page);
+  await selectBoard(page, "generic");
+  await selectDemo(page, "training_demo");
   await page.locator(".analysis-tools summary").click();
-  await page.getByRole("button", { name: "basic_and", exact: true }).click();
-  await page.getByRole("button", { name: "mov_example", exact: true }).click();
+  await selectDemo(page, "basic_and");
+  await selectDemo(page, "mov_example");
   const input = page.getByRole("spinbutton", { name: "D0 初期値" });
   await input.fill("");
   await input.pressSequentially("-123");
@@ -121,14 +110,11 @@ test("D initial value accepts negative typing without changing memory mid-edit",
 
 test("selected step remains selected after scanning", async ({ page }) => {
   await page.goto("/");
-  await page
-    .getByRole("combobox", { name: "盤モデル", exact: true })
-    .selectOption("generic");
-  await page
-    .getByRole("button", { name: "training_demo", exact: true })
-    .click();
+  await closeMenu(page);
+  await selectBoard(page, "generic");
+  await selectDemo(page, "training_demo");
   await page.locator(".analysis-tools summary").click();
-  await page.getByRole("button", { name: "basic_and", exact: true }).click();
+  await selectDemo(page, "basic_and");
   await page.locator(".step").filter({ hasText: /^1$/ }).click();
   await page.getByRole("button", { name: "▶ 1スキャン", exact: true }).click();
   await expect(page.locator("#program .panel-title")).toContainText(
@@ -138,15 +124,12 @@ test("selected step remains selected after scanning", async ({ page }) => {
 
 test("invalid or cancelled D edits preserve memory", async ({ page }) => {
   await page.goto("/");
-  await page
-    .getByRole("combobox", { name: "盤モデル", exact: true })
-    .selectOption("generic");
-  await page
-    .getByRole("button", { name: "training_demo", exact: true })
-    .click();
+  await closeMenu(page);
+  await selectBoard(page, "generic");
+  await selectDemo(page, "training_demo");
   await page.locator(".analysis-tools summary").click();
-  await page.getByRole("button", { name: "basic_and", exact: true }).click();
-  await page.getByRole("button", { name: "mov_example", exact: true }).click();
+  await selectDemo(page, "basic_and");
+  await selectDemo(page, "mov_example");
   const input = page.getByRole("spinbutton", { name: "D0 初期値" });
   const row = page
     .locator(".device")

@@ -1,8 +1,10 @@
+import { closeMenu, selectDemo } from "./helpers";
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 async function frozen(page: import("@playwright/test").Page) {
   await page.clock.install({ time: new Date("2026-11-16T00:00:00Z") });
   await page.goto("/");
+  await closeMenu(page);
   await page.clock.pauseAt(new Date("2026-11-16T00:01:00Z"));
 }
 for (const width of [1366, 390]) {
@@ -11,9 +13,7 @@ for (const width of [1366, 390]) {
   }) => {
     await page.setViewportSize({ width, height: 900 });
     await frozen(page);
-    await page
-      .getByRole("button", { name: "カウンター演習", exact: true })
-      .click();
+    await selectDemo(page, "カウンター演習");
     await page
       .getByRole("button", { name: "▶ 試験運転開始", exact: true })
       .click();
@@ -58,9 +58,7 @@ test("draft wiring is labeled separately from applied signals and export; discar
   page,
 }) => {
   await frozen(page);
-  await page
-    .getByRole("button", { name: "カウンター演習", exact: true })
-    .click();
+  await selectDemo(page, "カウンター演習");
   await page
     .getByRole("button", { name: "▶ 試験運転開始", exact: true })
     .click();
@@ -117,6 +115,7 @@ test("invalid drafts stay pending; imported assignments apply atomically and cle
 }) => {
   await page.setViewportSize({ width: 390, height: 900 });
   await page.goto("/");
+  await closeMenu(page);
   await page.locator(".exam-wiring summary").click();
   await page
     .getByRole("textbox", { name: "LS1 PLC割付", exact: true })
@@ -137,13 +136,11 @@ test("invalid drafts stay pending; imported assignments apply atomically and cle
   const downloaded = await pending;
   const wiring = JSON.parse(await readFile((await downloaded.path())!, "utf8"));
   wiring.inputs.LS1 = "X20";
-  await page
-    .locator(".exam-wiring input[type=file]")
-    .setInputFiles({
-      name: "wiring.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(wiring)),
-    });
+  await page.locator(".exam-wiring input[type=file]").setInputFiles({
+    name: "wiring.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(wiring)),
+  });
   await expect(
     page.getByLabel("割付の適用状態", { exact: true }),
   ).toContainText("未適用の変更が1件");

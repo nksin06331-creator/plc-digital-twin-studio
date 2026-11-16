@@ -1,3 +1,4 @@
+import { closeMenu, selectBoard, selectDemo } from "./helpers";
 import { test, expect } from "@playwright/test";
 test("ladder zoom, wide mode and contact selection preserve the running circuit state", async ({
   page,
@@ -5,13 +6,10 @@ test("ladder zoom, wide mode and contact selection preserve the running circuit 
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.clock.install({ time: new Date("2026-11-16T00:00:00Z") });
   await page.goto("/");
+  await closeMenu(page);
   await page.clock.pauseAt(new Date("2026-11-16T00:01:00Z"));
-  await page
-    .getByRole("combobox", { name: "盤モデル", exact: true })
-    .selectOption("generic");
-  await page
-    .getByRole("button", { name: "training_demo", exact: true })
-    .click();
+  await selectBoard(page, "generic");
+  await selectDemo(page, "training_demo");
   await page
     .getByRole("button", { name: "▶ 試験運転開始", exact: true })
     .click();
@@ -36,7 +34,7 @@ test("ladder zoom, wide mode and contact selection preserve the running circuit 
     symbolWidth,
   );
   await page
-    .getByRole("button", { name: "ラダーを広く表示", exact: true })
+    .getByRole("button", { name: "回路の幅を広げる", exact: true })
     .click();
   expect((await page.locator("#ladder").boundingBox())!.width).toBeGreaterThan(
     beforeWidth + 100,
@@ -54,7 +52,7 @@ test("ladder zoom, wide mode and contact selection preserve the running circuit 
     page.getByRole("combobox", { name: "ラダー表示倍率", exact: true }),
   ).toHaveValue("100");
   await page
-    .getByRole("button", { name: "盤と並べて表示", exact: true })
+    .getByRole("button", { name: "幅を均等に戻す", exact: true })
     .click();
   expect((await page.locator("#ladder").boundingBox())!.width).toBeCloseTo(
     beforeWidth,
@@ -78,6 +76,7 @@ test("long branched ladders zoom and scroll inside the canvas on mobile", async 
 }) => {
   await page.setViewportSize({ width: 390, height: 900 });
   await page.goto("/");
+  await closeMenu(page);
   await page
     .getByLabel("CSV・リストファイルを選択", { exact: true })
     .setInputFiles({

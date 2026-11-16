@@ -1,14 +1,12 @@
+import { closeMenu, selectBoard, selectDemo } from "./helpers";
 import { test, expect } from "@playwright/test";
 test("push buttons drive holding circuit, lamps, motor and ladder", async ({
   page,
 }) => {
   await page.goto("/");
-  await page
-    .getByRole("combobox", { name: "盤モデル", exact: true })
-    .selectOption("generic");
-  await page
-    .getByRole("button", { name: "training_demo", exact: true })
-    .click();
+  await closeMenu(page);
+  await selectBoard(page, "generic");
+  await selectDemo(page, "training_demo");
   await expect(page.locator("#ladder .ladder-rung")).toHaveCount(6);
   await page
     .getByRole("button", { name: "▶ 試験運転開始", exact: true })
@@ -53,12 +51,9 @@ test("BCD dial controls numeric output and motor conflict is visible", async ({
   page,
 }) => {
   await page.goto("/");
-  await page
-    .getByRole("combobox", { name: "盤モデル", exact: true })
-    .selectOption("generic");
-  await page
-    .getByRole("button", { name: "training_demo", exact: true })
-    .click();
+  await closeMenu(page);
+  await selectBoard(page, "generic");
+  await selectDemo(page, "training_demo");
   await page
     .getByRole("button", { name: "▶ 試験運転開始", exact: true })
     .click();
@@ -90,12 +85,9 @@ test("BCD dial controls numeric output and motor conflict is visible", async ({
 });
 test("NC momentary contacts return ON after key release", async ({ page }) => {
   await page.goto("/");
-  await page
-    .getByRole("combobox", { name: "盤モデル", exact: true })
-    .selectOption("generic");
-  await page
-    .getByRole("button", { name: "training_demo", exact: true })
-    .click();
+  await closeMenu(page);
+  await selectBoard(page, "generic");
+  await selectDemo(page, "training_demo");
   await page
     .getByRole("button", { name: "割付設定を表示", exact: true })
     .click();
@@ -117,12 +109,9 @@ test("NC momentary contacts return ON after key release", async ({ page }) => {
 test("training panel fits narrow viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await page
-    .getByRole("combobox", { name: "盤モデル", exact: true })
-    .selectOption("generic");
-  await page
-    .getByRole("button", { name: "training_demo", exact: true })
-    .click();
+  await closeMenu(page);
+  await selectBoard(page, "generic");
+  await selectDemo(page, "training_demo");
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
@@ -136,12 +125,9 @@ test("window blur releases a held input and invalid BCD address does not crash",
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
-  await page
-    .getByRole("combobox", { name: "盤モデル", exact: true })
-    .selectOption("generic");
-  await page
-    .getByRole("button", { name: "training_demo", exact: true })
-    .click();
+  await closeMenu(page);
+  await selectBoard(page, "generic");
+  await selectDemo(page, "training_demo");
   const start = page.getByRole("button", {
     name: "X0 押しボタン",
     exact: true,
