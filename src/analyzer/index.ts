@@ -36,7 +36,11 @@ export function analyze(p: Program) {
         access = "read";
       if (["OUT", "SET", "RST", "INCP"].includes(i.opcode))
         access = index === 0 ? "write" : "read";
-      if (i.opcode === "INCP") access = "read/write";
+      if (
+        i.opcode === "INCP" ||
+        (i.opcode === "OUT" && index === 0 && d.kind === "C")
+      )
+        access = "read/write";
       if (["MOV", "BCD"].includes(i.opcode))
         access = index === 1 ? "write" : "read";
       if (i.opcode === "*") access = index === 2 ? "write" : "read";

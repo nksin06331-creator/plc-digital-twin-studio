@@ -108,6 +108,11 @@ export function ExamPanel({
   useEffect(() => {
     setDraft(structuredClone(wiring));
   }, [wiring]);
+  const pendingChanges =
+    inputPoints.filter(([key]) => draft.inputs[key] !== wiring.inputs[key])
+      .length +
+    outputPoints.filter(([key]) => draft.outputs[key] !== wiring.outputs[key])
+      .length;
   const controls = useRef(onOperate);
   controls.current = onOperate;
   useEffect(() => {
@@ -603,7 +608,19 @@ export function ExamPanel({
         </label>
       </div>
       <details className="exam-wiring">
-        <summary>I/O割付・接点状態（CSVに合わせて設定）</summary>
+        <summary>
+          I/O割付・接点状態（CSVに合わせて設定）
+          {pendingChanges ? ` — 未適用 ${pendingChanges}件` : ""}
+        </summary>
+        <p
+          className={pendingChanges ? "wiring-pending" : "wiring-applied"}
+          role="status"
+          aria-label="割付の適用状態"
+        >
+          {pendingChanges
+            ? `未適用の変更が${pendingChanges}件あります。動作は「適用中の番地」を使用しています。`
+            : "編集内容はすべて適用済みです。"}
+        </p>
         <p>
           TB番号は盤の端子番号です。PLCアドレスは固定ではありません。初期値は公開デモ用のX10/Y30連番です。PB5は自動復帰b接点、LSは検出時ONのモデルです。
         </p>
@@ -614,14 +631,36 @@ export function ExamPanel({
                 <tr>
                   <th>TB</th>
                   <th>機器</th>
-                  <th>PLC</th>
-                  <th>状態</th>
+                  <th>
+                    編集する
+                    <br />
+                    番地
+                  </th>
+                  <th>
+                    適用中の
+                    <br />
+                    番地
+                  </th>
+                  <th>
+                    適用中の
+                    <br />
+                    状態
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {(side === "inputs" ? inputPoints : outputPoints).map(
                   ([key, label], index) => (
-                    <tr key={key}>
+                    <tr
+                      key={key}
+                      data-wiring-point={key}
+                      className={
+                        (draft[side] as Record<string, string>)[key] !==
+                        (wiring[side] as Record<string, string>)[key]
+                          ? "wiring-row-pending"
+                          : ""
+                      }
+                    >
                       <td>{side === "inputs" ? index + 1 : index + 20}</td>
                       <td title={label}>{key}</td>
                       <td>
@@ -638,8 +677,17 @@ export function ExamPanel({
                             }))
                           }
                         />
+                        {(draft[side] as Record<string, string>)[key] !==
+                          (wiring[side] as Record<string, string>)[key] && (
+                          <small className="wiring-unsaved">未適用</small>
+                        )}
                       </td>
-                      <td>
+                      <td aria-label={key + " 適用中の番地"}>
+                        <code>
+                          {(wiring[side] as Record<string, string>)[key]}
+                        </code>
+                      </td>
+                      <td aria-label={key + " 適用中の状態"}>
                         {side === "inputs"
                           ? image[
                               wiring.inputs[key as keyof ExamWiring["inputs"]]
@@ -659,6 +707,17 @@ export function ExamPanel({
         </div>
         <div className="wiring-actions">
           <button onClick={() => apply(draft)}>割付を適用・初期化</button>
+          <button
+            disabled={!pendingChanges}
+            onClick={() => {
+              setDraft(structuredClone(wiring));
+              setMessage(
+                "編集を破棄しました。適用中の割付・PLC・盤は変更していません",
+              );
+            }}
+          >
+            編集を破棄
+          </button>
           <button
             onClick={() => {
               setDraft(defaultWiring());
@@ -695,6 +754,9 @@ export function ExamPanel({
             />
           </label>
         </div>
+        <p className="muted">
+          適用するとPLCと盤を初期化します。JSON出力は適用中の割付です。割付表を変えてもCSV内の番地は書き換わりません。
+        </p>
         {message && (
           <p role="status" className="wiring-message">
             {message}
