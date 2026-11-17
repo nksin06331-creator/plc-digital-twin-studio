@@ -5,7 +5,8 @@ import {
   useState,
   type CSSProperties,
 } from "react";
-import { buildLadder, type Logic } from "../core/ladder";
+import type { Logic } from "../core/ladder";
+import { buildDisplayLadder } from "./ladderDisplay";
 import type { Instruction, Program } from "../core/model";
 import type { ScanTrace } from "../core/engine";
 function Symbol({
@@ -169,18 +170,7 @@ export function LadderView({
   useLayoutEffect(() => {
     canvasRef.current?.scrollTo({ top: 0, left: 0 });
   }, [program]);
-  const ladder = useMemo(
-    () =>
-      program.instructions.length > 1000
-        ? {
-            rungs: [],
-            errors: [
-              "ラダー表示は1000命令までです。命令一覧で確認してください。",
-            ],
-          }
-        : buildLadder(program),
-    [program],
-  );
+  const ladder = useMemo(() => buildDisplayLadder(program), [program]);
   const states = new Map(trace.map((t) => [t.step, t]));
   return (
     <section id="ladder" className="panel ladder-panel">
