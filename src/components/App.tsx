@@ -649,7 +649,7 @@ export function App() {
             />
           ) : (
             <TrainingPanel
-              key={filename}
+              key={programUpdate}
               inputs={inputNames}
               outputs={outputNames}
               memory={plc.current.memory}
